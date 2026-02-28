@@ -62,6 +62,13 @@ var app = builder.Build();
 
 StripeConfiguration.ApiKey = builder.Configuration["Stripe:SecretKey"];
 
+// ── Auto-Migrate (aplica migraciones EF Core al arrancar) ────────────
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    db.Database.Migrate();
+}
+
 // ── Seed de Roles y Admin ─────────────────────────────────────────
 using (var scope = app.Services.CreateScope())
 {
@@ -80,7 +87,10 @@ else
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
+// HTTPS lo gestiona el reverse proxy de Coolify en producción
+if (!app.Environment.IsProduction())
+    app.UseHttpsRedirection();
+
 app.UseStaticFiles();
 
 app.UseRouting();
