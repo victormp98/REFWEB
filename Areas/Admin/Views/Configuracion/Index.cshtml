@@ -1,0 +1,133 @@
+@model RefWeb.Models.ConfiguracionNegocio
+@{
+    ViewData["Title"] = "Configuración del Negocio";
+}
+
+<div class="animate-fade-in">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4 shadow-sm" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex align-items-center mb-5">
+        <div class="icon-box icon-box-warning me-4">
+            <i class="fas fa-cog fa-lg"></i>
+        </div>
+        <div>
+            <h1 class="display-6 fw-bold text-dark mb-0">Configuración del Negocio</h1>
+            <p class="text-muted mb-0">Datos generales de tu refaccionaria.</p>
+        </div>
+    </div>
+
+    <form asp-action="Index" method="post" enctype="multipart/form-data">
+        <input type="hidden" asp-for="Id" />
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4"></div>
+
+        <div class="row g-4">
+
+            
+            <div class="col-lg-8">
+
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-store me-2"></i>Datos del Negocio</h5>
+                    <div class="row g-3">
+                        <div class="col-12">
+                            <label asp-for="Nombre" class="form-label fw-bold small text-uppercase">Nombre del Negocio *</label>
+                            <input asp-for="Nombre" class="form-control form-control-lg" placeholder="Ej. Refaccionaria El Motor" />
+                            <span asp-validation-for="Nombre" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Direccion" class="form-label fw-bold small text-uppercase">Dirección</label>
+                            <input asp-for="Direccion" class="form-control" placeholder="Calle, Número, Colonia, Ciudad" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Telefono" class="form-label fw-bold small text-uppercase">Teléfono</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-phone"></i></span>
+                                <input asp-for="Telefono" class="form-control" placeholder="442-123-4567" />
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Email" class="form-label fw-bold small text-uppercase">Correo Electrónico</label>
+                            <div class="input-group">
+                                <span class="input-group-text"><i class="fas fa-envelope"></i></span>
+                                <input asp-for="Email" class="form-control" type="email" placeholder="contacto@negocio.com" />
+                            </div>
+                            <span asp-validation-for="Email" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="RFC" class="form-label fw-bold small text-uppercase">RFC</label>
+                            <input asp-for="RFC" class="form-control" placeholder="XXXX000000XX0" style="text-transform: uppercase;" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="ImpresoraPredeterminada" class="form-label fw-bold small text-uppercase">Impresora Predeterminada</label>
+                            <input asp-for="ImpresoraPredeterminada" class="form-control" placeholder="Nombre de la impresora" />
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-4">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-file-alt me-2"></i>Textos del Sistema</h5>
+                    <div>
+                        <label asp-for="LeyendaPie" class="form-label fw-bold small text-uppercase">Leyenda en Pie de Tickets/Facturas</label>
+                        <textarea asp-for="LeyendaPie" class="form-control" rows="3"
+                                  placeholder="Ej. Gracias por su preferencia. No se aceptan devoluciones después de 3 días."></textarea>
+                        <span class="text-muted small">Aparece en la parte inferior de tickets de venta y comprobantes.</span>
+                    </div>
+                </div>
+            </div>
+
+            
+            <div class="col-lg-4">
+
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-image me-2"></i>Logo del Negocio</h5>
+
+                    @if (!string.IsNullOrEmpty(Model.LogoUrl))
+                    {
+                        <div class="text-center mb-3 p-3 rounded-3 bg-light">
+                            <img src="@Model.LogoUrl" alt="Logo actual" style="max-height: 120px; object-fit: contain;" />
+                            <p class="text-muted small mt-2 mb-0">Logo actual</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center mb-3 p-4 rounded-3 bg-light">
+                            <i class="fas fa-image fa-3x text-muted opacity-50"></i>
+                            <p class="text-muted small mt-2 mb-0">Sin logo cargado</p>
+                        </div>
+                    }
+
+                    <label class="form-label fw-bold small text-uppercase">Subir / Cambiar Logo</label>
+                    <input type="file" name="logo" class="form-control" accept="image/*" />
+                    <p class="text-muted x-small mt-2">JPG, PNG, SVG o WebP. Máx. 2MB.</p>
+                </div>
+
+                <div class="glass-card p-4">
+                    <h5 class="fw-bold mb-3 text-muted small text-uppercase"><i class="fas fa-info-circle me-2"></i>Estado del Sistema</h5>
+                    <div class="d-flex align-items-center justify-content-between">
+                        <label class="fw-bold small text-uppercase mb-0">Configuración Activa</label>
+                        <div class="form-check form-switch mb-0">
+                            <input class="form-check-input" type="checkbox" asp-for="Activo" style="width: 2.5em; height: 1.3em;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 mt-4">
+                    <button type="submit" class="btn btn-primary py-3 shadow-lg">
+                        <i class="fas fa-save me-2"></i>Guardar Configuración
+                    </button>
+                </div>
+            </div>
+
+        </div>
+    </form>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

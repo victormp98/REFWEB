@@ -1,0 +1,472 @@
+@{
+    ViewData["Title"] = "Checkout";
+}
+
+@section Breadcrumbs {
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb breadcrumb-modern">
+            <li class="breadcrumb-item"><a asp-area="Tienda" asp-controller="Tienda" asp-action="Index">Tienda</a></li>
+            <li class="breadcrumb-item"><a asp-action="Carrito">Carrito</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Checkout</li>
+        </ol>
+    </nav>
+}
+
+<div class="container animate-fade-in mb-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <!-- Checkout Progress -->
+            <div class="checkout-steps mb-5">
+                <div class="d-flex justify-content-between position-relative">
+                    <div class="step-item active">
+                        <div class="step-icon"><i class="fas fa-shopping-cart"></i></div>
+                        <span class="step-label">Carrito</span>
+                    </div>
+                    <div class="step-item active">
+                        <div class="step-icon"><i class="fas fa-truck"></i></div>
+                        <span class="step-label">Envío</span>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-icon"><i class="fas fa-credit-card"></i></div>
+                        <span class="step-label">Pago</span>
+                    </div>
+                    <div class="step-connector"></div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <!-- Main Flow -->
+                <div class="col-lg-8">
+                    <form id="payment-form">
+                        @Html.AntiForgeryToken()
+                        <!-- Shipping Info -->
+                        <div class="card card-modern border-0 shadow-sm mb-4">
+                            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                                <h5 class="fw-bold mb-0">Información de Envío</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                @{ var misDirecciones = ViewBag.Direcciones as List<RefWeb.Models.Direccion>; }
+                                
+                                @if (misDirecciones != null && misDirecciones.Any())
+                                {
+                                    <div class="mb-4 pb-3 border-bottom">
+                                        <label class="form-label fw-bold small text-muted text-uppercase mb-3">Mis Direcciones Guardadas</label>
+                                        <div class="list-group list-group-flush gap-2" id="savedAddresses">
+                                            @foreach(var dir in misDirecciones)
+                                            {
+                                                <label class="list-group-item list-group-item-action rounded-3 border @(dir.EsPrincipal ? "border-primary bg-primary-soft" : "") d-flex align-items-center cursor-pointer p-3">
+                                                    <input class="form-check-input me-3 my-0" type="radio" name="addressSelection" value="@dir.Id" @(dir.EsPrincipal ? "checked" : "") onchange="toggleNewAddressForm()">
+                                                    <div>
+                                                        <div class="fw-bold text-dark"><i class="fas fa-@(dir.TipoDireccion == "Oficina" ? "building" : "home") me-2 text-primary"></i>@dir.TipoDireccion @(dir.EsPrincipal ? "(Predeterminada)" : "")</div>
+                                                        <div class="small text-muted mt-1">@dir.Calle, Col. @dir.Colonia. CP. @dir.CodigoPostal, @dir.Ciudad, @dir.Estado</div>
+                                                        @if(!string.IsNullOrEmpty(dir.Referencias))
+                                                        {
+                                                            <div class="small text-secondary mt-1 fst-italic">Ref: @dir.Referencias</div>
+                                                        }
+                                                    </div>
+                                                </label>
+                                            }
+                                            <label class="list-group-item list-group-item-action rounded-3 border d-flex align-items-center cursor-pointer p-3 mt-2">
+                                                <input class="form-check-input me-3 my-0" type="radio" name="addressSelection" value="new" onchange="toggleNewAddressForm()">
+                                                <div class="fw-bold text-dark"><i class="fas fa-plus-circle me-2 text-success"></i>Usar una nueva dirección</div>
+                                            </label>
+                                        </div>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <input type="hidden" name="addressSelection" value="new" />
+                                }
+
+                                <div id="newAddressForm" style="display: @(misDirecciones != null && misDirecciones.Any() ? "none" : "block");">
+                                    <h6 class="fw-bold mb-3 small text-muted text-uppercase">Ingresa tu dirección de entrega</h6>
+                                    <div class="row g-3">
+                                        <div class="col-12">
+                                            <label class="form-label fw-600 small">Calle, número y colonia *</label>
+                                            <textarea id="direccion" class="form-control form-control-modern" rows="2" placeholder="Ej. Av. Reforma 222, Colonia Juárez..."></textarea>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-600 small">Código Postal *</label>
+                                            <input type="text" id="cp" class="form-control form-control-modern" placeholder="Ej. 06600" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-600 small">Ciudad *</label>
+                                            <input type="text" id="ciudad" class="form-control form-control-modern" placeholder="Ej. Ciudad de México" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-600 small">Estado *</label>
+                                            <input type="text" id="estado" class="form-control form-control-modern" placeholder="Ej. CDMX" />
+                                        </div>
+                                        <div class="col-md-6">
+                                            <label class="form-label fw-600 small">Teléfono de contacto *</label>
+                                            <input type="tel" id="telefono" class="form-control form-control-modern" placeholder="10 dígitos" />
+                                        </div>
+                                        <div class="col-12">
+                                            <label class="form-label fw-600 small">Instrucciones adicionales (Opcional)</label>
+                                            <input type="text" id="notas" class="form-control form-control-modern" placeholder="Ej. Portón negro, tocar timbre..." />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Payment Info -->
+                        <div class="card card-modern border-0 shadow-sm">
+                            <div class="card-header bg-transparent border-0 pt-4 px-4">
+                                <h5 class="fw-bold mb-0">Método de Pago</h5>
+                            </div>
+                            <div class="card-body p-4">
+                                <div class="payment-method-badge mb-4">
+                                    <i class="fab fa-stripe text-primary fs-3"></i>
+                                    <span class="ms-2 fw-bold">Pago Seguro con Tarjeta</span>
+                                </div>
+                                
+                                <label class="form-label fw-600 small mb-3">Detalles de la Tarjeta</label>
+                                <div id="card-element" class="form-control-modern bg-light py-3 px-3">
+                                    <!-- Stripe Elements -->
+                                </div>
+                                <div id="card-errors" class="text-danger small mt-2" role="alert"></div>
+                                <div id="stripe-status" style="display:none;"></div>
+                                
+                                <div class="mt-4 p-3 bg-light rounded-3 small text-muted">
+                                    <i class="fas fa-info-circle me-2"></i>
+                                    Tu pago será procesado de forma segura. No almacenamos los datos de tu tarjeta.
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Order Sidebar -->
+                <div class="col-lg-4">
+                    <div class="card card-modern border-0 shadow-sm sticky-top" style="top: 100px;">
+                        <div class="card-body p-4">
+                            <h5 class="fw-bold mb-4">Tu Pedido</h5>
+                            
+                            <div id="checkout-summary-items" class="mb-4">
+                                <!-- JS Inject -->
+                            </div>
+                            
+                            <hr class="border-light">
+                            
+                            <div class="d-flex justify-content-between mb-2">
+                                <span class="text-muted">Subtotal</span>
+                                <span class="fw-bold" id="checkout-subtotal">$0.00</span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-4">
+                                <span class="text-muted">Envío</span>
+                                <span class="text-success fw-bold">Gratis</span>
+                            </div>
+                            
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <span class="fs-5 fw-bold">Total</span>
+                                <span class="fs-3 fw-800 text-primary" id="checkout-total">$@ViewBag.Total.ToString("N2")</span>
+                            </div>
+                            
+                            <button id="submit-button" type="button" onclick="handlePago()" class="btn btn-primary-modern w-100 py-3 rounded-3 fw-bold shadow-sm">
+                                <span id="button-text">Pagar Ahora</span>
+                                <div class="spinner-border spinner-border-sm d-none" id="spinner"></div>
+                            </button>
+                            
+                            <a asp-action="Carrito" class="btn btn-link link-secondary w-100 text-decoration-none small mt-3">
+                                <i class="fas fa-arrow-left me-1"></i>Editar Carrito
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .checkout-steps { position: relative; max-width: 600px; margin: 0 auto; }
+    .step-item { z-index: 2; background: #f1f5f9; text-align: center; width: 80px; }
+    .step-icon { width: 40px; height: 40px; background: #fff; border: 2px solid #e2e8f0; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin: 0 auto 8px; color: #94a3b8; transition: all 0.3s; }
+    .step-label { font-size: 0.75rem; font-weight: 600; color: #94a3b8; }
+    .step-item.active .step-icon { background: var(--primary); border-color: var(--primary); color: #fff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+    .step-item.active .step-label { color: var(--primary); }
+    .step-connector { position: absolute; top: 20px; left: 0; right: 0; height: 2px; background: #e2e8f0; z-index: 1; }
+    .payment-method-badge { display: flex; align-items: center; padding: 1rem; border: 1px solid var(--primary); background: rgba(37, 99, 235, 0.05); border-radius: 0.75rem; }
+    #card-element { border: 1px solid #e2e8f0; border-radius: 0.5rem; transition: all 0.2s; }
+    #card-element.StripeElement--focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+</style>
+
+@section Scripts {
+    <script src="https://js.stripe.com/v3/"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <style>
+        .field-error { border-color: #dc3545 !important; box-shadow: 0 0 0 3px rgba(220,53,69,0.15) !important; }
+        .field-error-msg { color: #dc3545; font-size: 0.78rem; margin-top: 4px; display: flex; align-items: center; gap: 5px; }
+        .field-error-msg i { font-size: 0.75rem; }
+        #stripe-status { font-size: 0.82rem; margin-top: 8px; padding: 8px 12px; border-radius: 8px; }
+        #stripe-status.loading { background: #f1f5f9; color: #64748b; }
+        #stripe-status.ready  { background: #f0fdf4; color: #16a34a; }
+        #stripe-status.error  { background: #fef2f2; color: #dc2626; }
+    </style>
+    <script>
+        let stripe, elements, stripeReady = false;
+
+        // ── Helpers de validación visual ─────────────────────────────────────
+        function setFieldError(fieldId, msg) {
+            const el = document.getElementById(fieldId);
+            if (!el) return;
+            el.classList.add('field-error');
+            let err = el.parentElement.querySelector('.field-error-msg');
+            if (!err) { err = document.createElement('div'); err.className = 'field-error-msg'; el.parentElement.appendChild(err); }
+            err.innerHTML = `<i class="fas fa-exclamation-circle"></i> ${msg}`;
+        }
+
+        function clearFieldError(fieldId) {
+            const el = document.getElementById(fieldId);
+            if (!el) return;
+            el.classList.remove('field-error');
+            const err = el.parentElement.querySelector('.field-error-msg');
+            if (err) err.remove();
+        }
+
+        function clearAllErrors() {
+            ['direccion','cp','ciudad','estado','telefono'].forEach(clearFieldError);
+        }
+
+        // Auto-limpiar error al escribir
+        ['direccion','cp','ciudad','estado','telefono'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('input', () => clearFieldError(id));
+        });
+
+        // ── Inicializar Stripe Elements ───────────────────────────────────────
+        function setStripeStatus(type, msg) {
+            const el = document.getElementById('stripe-status');
+            if (!el) return;
+            el.className = 'stripe-status ' + type;
+            el.innerHTML = msg;
+            el.style.display = 'block';
+        }
+
+        async function initialize() {
+            const publishableKey = "@ViewBag.StripePublishableKey";
+            if (!publishableKey || publishableKey === '') {
+                setStripeStatus('error', '<i class="fas fa-times-circle me-1"></i> Stripe no está configurado. Contacta al administrador.');
+                return;
+            }
+
+            stripe = Stripe(publishableKey);
+
+            setStripeStatus('loading', '<i class="fas fa-spinner fa-spin me-1"></i> Iniciando el módulo de pago seguro...');
+            // NO deshabilitar el botón — un botón disabled ignora onclick completamente
+
+            const rawCart = CartManager.get();
+            const items = rawCart.map(i => ({ productId: i.productoId, cantidad: i.cantidad }));
+
+            try {
+                const response = await fetch("/Tienda/Tienda/IniciarPago", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        "RequestVerificationToken": $('input[name="__RequestVerificationToken"]').val()
+                    },
+                    body: JSON.stringify(items)
+                });
+
+                const responseData = await response.json();
+
+                if (!response.ok || responseData.error) {
+                    setStripeStatus('error', `<i class="fas fa-exclamation-triangle me-1"></i> ${responseData.error || 'Error al preparar el pago.'}`);
+                    return;
+                }
+
+                const { clientSecret } = responseData;
+
+                elements = stripe.elements({ clientSecret });
+                const paymentElement = elements.create("payment");
+                paymentElement.mount("#card-element");
+
+                paymentElement.on('ready', () => {
+                    stripeReady = true;
+                    setStripeStatus('ready', '<i class="fas fa-lock me-1"></i> Módulo de pago listo. Tus datos están protegidos.');
+                    console.log('[Checkout] Stripe Elements listo.');
+                });
+
+                paymentElement.on('loaderror', (event) => {
+                    console.error('[Checkout] Stripe loaderror:', event.error);
+                    setStripeStatus('error', `<i class="fas fa-times-circle me-1"></i> Error al cargar el formulario de pago: ${event.error.message}`);
+                });
+
+            } catch (err) {
+                setStripeStatus('error', `<i class="fas fa-times-circle me-1"></i> Error de conexión: ${err.message}`);
+            }
+        }
+
+        // ── Validación de campos ──────────────────────────────────────────────
+        function validateAddressFields(addressMode) {
+            clearAllErrors();
+            let valid = true;
+
+            if (addressMode !== 'new') return true; // direccion existente — sin validación de forma
+
+            const fieldsConfig = [
+                { id: 'direccion', label: 'Calle y número son obligatorios' },
+                { id: 'cp',        label: 'El Código Postal es obligatorio' },
+                { id: 'ciudad',    label: 'La Ciudad es obligatoria' },
+                { id: 'estado',    label: 'El Estado es obligatorio' },
+            ];
+
+            fieldsConfig.forEach(({ id, label }) => {
+                const el = document.getElementById(id);
+                if (!el || !el.value.trim()) {
+                    setFieldError(id, label);
+                    valid = false;
+                }
+            });
+
+            // Teléfono: 10 dígitos
+            const telEl = document.getElementById('telefono');
+            if (telEl) {
+                const telVal = telEl.value.replace(/\D/g, '');
+                if (!telVal || telVal.length < 10) {
+                    setFieldError('telefono', 'Ingresa un teléfono válido de 10 dígitos');
+                    valid = false;
+                }
+            }
+
+            // Scroll al primer campo con error
+            if (!valid) {
+                const firstError = document.querySelector('.field-error');
+                if (firstError) firstError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }
+
+            return valid;
+        }
+
+        // ── Handler principal del pago ────────────────────────────────────────
+        async function handlePago() {
+            console.log('[Checkout] handlePago() llamado. stripeReady=', stripeReady, 'elements=', !!elements);
+            const addressModeCheckbox = document.querySelector('input[name="addressSelection"]:checked');
+            const hiddenAddressMode = document.querySelector('input[type="hidden"][name="addressSelection"]');
+            const addressMode = addressModeCheckbox ? addressModeCheckbox.value : (hiddenAddressMode ? hiddenAddressMode.value : 'new');
+
+            // Validar dirección con feedback visual por campo
+            if (!validateAddressFields(addressMode)) return;
+
+            // Verificar que Stripe esté listo
+            if (!stripeReady || !elements) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Módulo de pago no listo',
+                    text: 'El formulario de tarjeta aún está cargando. Espera un momento e intenta de nuevo.',
+                    confirmButtonText: 'Entendido'
+                });
+                return;
+            }
+
+            setLoading(true);
+
+            try {
+                const { error, paymentIntent } = await stripe.confirmPayment({
+                    elements,
+                    confirmParams: {
+                        return_url: window.location.origin + "/Tienda/Tienda/Index?pago=exito",
+                    },
+                    redirect: 'if_required'
+                });
+
+                if (error) {
+                    let friendlyMsg = error.message;
+                    if (error.code === 'card_declined') friendlyMsg = 'Tu tarjeta fue rechazada. Verifica los datos o usa otra tarjeta.';
+                    if (error.code === 'insufficient_funds') friendlyMsg = 'Fondos insuficientes en tu tarjeta.';
+                    if (error.code === 'incorrect_cvc') friendlyMsg = 'El código de seguridad (CVC) es incorrecto.';
+                    if (error.code === 'expired_card') friendlyMsg = 'Tu tarjeta ha expirado.';
+                    document.querySelector("#card-errors").textContent = friendlyMsg;
+                    Swal.fire({ icon: 'error', title: 'Pago rechazado', text: friendlyMsg, confirmButtonText: 'Intentar de nuevo' });
+                    setLoading(false);
+
+                } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                    CartManager.clear();
+                    const form = document.getElementById('payment-form');
+
+                    const piInput = document.createElement('input');
+                    piInput.type = 'hidden'; piInput.name = 'paymentIntentId'; piInput.value = paymentIntent.id;
+                    form.appendChild(piInput);
+
+                    if (addressMode !== 'new') {
+                        const inp = document.createElement('input');
+                        inp.type = 'hidden'; inp.name = 'DireccionExistenteId'; inp.value = addressMode;
+                        form.appendChild(inp);
+                    } else {
+                        [['Calle','direccion'],['CodigoPostal','cp'],['Ciudad','ciudad'],['Estado','estado'],['Colonia','cp']].forEach(([name,srcId]) => {
+                            const inp = document.createElement('input');
+                            inp.type = 'hidden'; inp.name = name;
+                            inp.value = document.getElementById(srcId)?.value || '';
+                            form.appendChild(inp);
+                        });
+                    }
+
+                    const notasInp = document.createElement('input');
+                    notasInp.type = 'hidden'; notasInp.name = 'Notas';
+                    notasInp.value = document.getElementById('notas')?.value || '';
+                    form.appendChild(notasInp);
+
+                    form.action = "/Tienda/Tienda/ConfirmarPedido";
+                    form.method = "POST";
+                    form.submit();
+
+                } else {
+                    setLoading(false);
+                }
+            } catch (err) {
+                Swal.fire({ icon: 'error', title: 'Error inesperado', text: 'Ocurrió un error: ' + err.message });
+                setLoading(false);
+            }
+        }
+
+        // ── Toggle forma nueva dirección ──────────────────────────────────────
+        function toggleNewAddressForm() {
+            const selection = document.querySelector('input[name="addressSelection"]:checked')?.value || 'new';
+            const form = document.getElementById('newAddressForm');
+            form.style.display = selection === 'new' ? 'block' : 'none';
+            clearAllErrors();
+        }
+
+        function setLoading(isLoading) {
+            document.querySelector("#submit-button").disabled = isLoading;
+            document.querySelector("#spinner").classList.toggle("d-none", !isLoading);
+            document.querySelector("#button-text").textContent = isLoading ? "Procesando..." : "Pagar Ahora";
+        }
+
+        function updateCheckoutSummary() {
+            const cartItems = CartManager.get();
+            const summaryContainer = document.getElementById('checkout-summary-items');
+            summaryContainer.innerHTML = '';
+            let subtotal = 0;
+
+            if (!cartItems.length) {
+                summaryContainer.innerHTML = '<p class="text-muted small">No hay productos en el carrito.</p>';
+                return;
+            }
+
+            cartItems.forEach(item => {
+                const itemTotal = item.precio * item.cantidad;
+                subtotal += itemTotal;
+                const div = document.createElement('div');
+                div.className = 'd-flex justify-content-between align-items-center mb-2';
+                div.innerHTML = `<span class="small">${item.nombre} x ${item.cantidad}</span><span class="fw-bold small">$${itemTotal.toFixed(2)}</span>`;
+                summaryContainer.appendChild(div);
+            });
+
+            document.getElementById('checkout-subtotal').textContent = `$${subtotal.toFixed(2)}`;
+        }
+
+        $(document).ready(function() {
+            updateCheckoutSummary();
+            initialize();
+
+            // Vincular el click via jQuery (más robusto que onclick inline)
+            $(document).on('click', '#submit-button', function() {
+                handlePago();
+            });
+            console.log('[Checkout] Event listeners registrados.');
+        });
+    </script>
+}
+

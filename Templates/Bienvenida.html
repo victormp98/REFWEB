@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; line-height: 1.6; color: #333; }
+        .container { max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #e2e8f0; border-radius: 8px; }
+        .header { background: #2563eb; color: #ffffff; padding: 20px; text-align: center; border-radius: 8px 8px 0 0; }
+        .content { padding: 20px; }
+        .footer { text-align: center; padding: 20px; font-size: 12px; color: #64748b; }
+        .btn { display: inline-block; padding: 12px 24px; background: #2563eb; color: #ffffff; text-decoration: none; border-radius: 6px; font-weight: bold; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Bienvenido a RefWeb</h1>
+        </div>
+        <div class="content">
+            <h2>¡Hola {Nombre}!</h2>
+            <p>Gracias por unirte a la red de refaccionarias más grande del país. Tu cuenta ha sido creada exitosamente.</p>
+            <p>Ahora puedes acceder a nuestro catálogo exclusivo, realizar pedidos en línea y gestionar tus compras desde tu panel de cliente.</p>
+            <div style="text-align: center; margin: 30px 0;">
+                <a href="{UrlLogin}" class="btn">Empezar a comprar</a>
+            </div>
+            <p>Si tienes alguna pregunta, no dudes en contactarnos respondiendo a este correo.</p>
+            <p>Atentamente,<br>El equipo de RefWeb</p>
+        </div>
+        <div class="footer">
+            &copy; {Year} RefWeb - Refacciones de alta calidad
+        </div>
+    </div>
+</body>
+</html>

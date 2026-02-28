@@ -1,0 +1,92 @@
+@model RefWeb.Models.Producto
+@{
+    ViewData["Title"] = Model.Nombre;
+}
+
+<div class="container my-5">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="@Url.Action("Index")">Tienda</a></li>
+            <li class="breadcrumb-item active">@Model.Nombre</li>
+        </ol>
+    </nav>
+
+    <div class="row">
+        <div class="col-md-6 mb-4">
+            <div class="card border-0 shadow-sm p-4 text-center">
+                <img src="@Model.ImagenUrl" class="img-fluid rounded" alt="@Model.Nombre" style="max-height: 500px; object-fit: contain;">
+            </div>
+        </div>
+        <div class="col-md-6">
+            <h1 class="fw-bold mb-3">@Model.Nombre</h1>
+            <div class="d-flex align-items-center mb-4">
+                <span class="badge bg-primary px-3 py-2 me-3">@Model.Categoria?.Nombre</span>
+                <span class="text-muted small">SKU: @Model.CodigoSKU</span>
+            </div>
+            
+            <h2 class="text-primary fw-bold mb-4">$@Model.Precio.ToString("N2")</h2>
+            
+            <div class="mb-4">
+                <h6 class="fw-bold text-uppercase small text-muted">Descripción</h6>
+                <p class="lead">@Model.Descripcion</p>
+            </div>
+
+            <div class="card border-0 bg-light p-4 mb-4 shadow-sm">
+                <div class="row align-items-center">
+                    <div class="col-md-4 mb-3 mb-md-0">
+                        <label class="form-label small fw-bold">Cantidad</label>
+                        <input type="number" id="txtCantidad" class="form-control" value="1" min="1" max="@Model.Stock">
+                    </div>
+                    <div class="col-md-8">
+                        <div class="d-grid">
+                            <button class="btn btn-primary btn-lg py-3" id="btnAddToCart" data-id="@Model.Id" @(Model.Stock <= 0 ? "disabled" : "")>
+                                <i class="fas fa-cart-plus me-2"></i>Añadir al Carrito
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="small text-muted mt-3 mb-0">
+                    <i class="fas fa-boxes me-2"></i>Disponible: <strong>@Model.Stock</strong> unidades
+                </p>
+            </div>
+
+            <div class="alert alert-info border-0 shadow-sm d-flex align-items-center">
+                <i class="fas fa-shipping-fast fs-3 me-3"></i>
+                <div>
+                    <h6 class="mb-0 fw-bold">Envío Seguro</h6>
+                    <small>Entrega garantizada de 2 a 5 días hábiles.</small>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script>
+        $("#btnAddToCart").on("click", function() {
+            const id = $(this).data("id");
+            const cant = $("#txtCantidad").val();
+            
+            $.post("/Tienda/Tienda/AgregarCarrito", { productoId: id, cantidad: cant }, function(res) {
+                if (res.success) {
+                    Swal.fire({
+                        title: '¡Agregado!',
+                        text: '¿Quieres ver tu carrito o seguir comprando?',
+                        icon: 'success',
+                        showCancelButton: true,
+                        confirmButtonText: 'Ir al carrito',
+                        cancelButtonText: 'Seguir comprando',
+                        confirmButtonColor: '#0d6efd'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            window.location.href = "/Tienda/Tienda/Carrito";
+                        }
+                    });
+                } else {
+                    Swal.fire("Error", res.message, "error");
+                }
+            });
+        });
+    </script>
+}

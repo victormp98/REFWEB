@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+        }
+
+        .header {
+            background: #10b981;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .order-details {
+            background: #f8fafc;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>¡Pedido Confirmado!</h1>
+        </div>
+        <div class="content">
+            <h2>Hola {Nombre},</h2>
+            <p>Hemos recibido tu pago correctamente. Tu pedido #{PedidoId} ya está siendo procesado por nuestro equipo
+                de almacén.</p>
+
+            <div class="order-details">
+                <strong>Resumen del pedido:</strong><br>
+                Total: {Total}<br>
+                Fecha: {Fecha}<br>
+                Dirección: {Direccion}
+            </div>
+
+            <p>Te enviaremos otro correo en cuanto tu paquete sea entregado a la paquetería con tu número de
+                seguimiento.</p>
+            <p>Gracias por confiar en RefWeb.</p>
+        </div>
+        <div class="footer">
+            &copy; {Year} RefWeb - Refacciones de alta calidad
+        </div>
+    </div>
+</body>
+
+</html>

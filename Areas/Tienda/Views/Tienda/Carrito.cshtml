@@ -1,0 +1,192 @@
+@model IEnumerable<RefWeb.Models.PedidoDetalle>
+@{
+    ViewData["Title"] = "Tu Carrito";
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-5 fw-bold text-dark mb-1">Tu Carrito</h1>
+            <p class="text-muted mb-0">Revisa tus productos antes de finalizar la compra.</p>
+        </div>
+        <div class="icon-box icon-box-primary-soft">
+            <i class="fas fa-shopping-cart"></i>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="glass-card overflow-hidden">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0" id="cart-table">
+                        <thead>
+                            <tr>
+                                <th class="ps-4">Producto</th>
+                                <th class="text-center">Precio</th>
+                                <th class="text-center" style="width: 140px;">Cantidad</th>
+                                <th class="text-end pe-4">Subtotal</th>
+                            </tr>
+                        </thead>
+                        <tbody id="cart-items">
+                            <!-- JS Inject -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Empty State -->
+                <div id="cart-empty" class="text-center py-5 d-none">
+                    <div class="opacity-25 mb-4">
+                        <i class="fas fa-shopping-basket fa-5x"></i>
+                    </div>
+                    <h5 class="fw-bold">Tu carrito está vacío</h5>
+                    <p class="text-muted">¿Buscas algo en especial? Visita nuestra tienda.</p>
+                    <a asp-action="Index" class="btn btn-primary rounded-pill px-4 mt-3">
+                        Explorar Tienda
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-4">
+            <div class="glass-card p-4 sticky-top" style="top: 100px;">
+                <h5 class="fw-bold mb-4">Resumen de Compra</h5>
+                
+                <div class="d-flex justify-content-between mb-3">
+                    <span class="text-muted">Subtotal</span>
+                    <span class="fw-bold text-dark" id="cart-subtotal">$0.00</span>
+                </div>
+                <div class="d-flex justify-content-between mb-4">
+                    <span class="text-muted">Envío</span>
+                    <span class="badge bg-success-soft">Gratis</span>
+                </div>
+                
+                <hr class="opacity-10 my-4">
+                
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <span class="fs-5 fw-bold text-dark">Total</span>
+                    <span class="fs-2 fw-800 text-primary" id="cart-total">$0.00</span>
+                </div>
+                
+                <div class="d-grid gap-3">
+                    <button onclick="prepareCheckout()" class="btn btn-primary py-3 shadow-lg">
+                        Finalizar Pedido <i class="fas fa-arrow-right ms-2 small"></i>
+                    </button>
+                    <button class="btn btn-link link-danger text-decoration-none small" onclick="CartManager.clear()">
+                        <i class="fas fa-trash-alt me-1"></i> Vaciar Carrito
+                    </button>
+                </div>
+            </div>
+            
+            <div class="glass-card mt-4 p-3 d-flex align-items-center border-0" style="background: rgba(16, 185, 129, 0.05);">
+                <div class="icon-box bg-success-soft me-3">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <div>
+                    <h6 class="fw-bold mb-0 small">Compra Segura</h6>
+                    <p class="text-muted x-small mb-0">Encriptación SSL de 256 bits.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        $(document).ready(function() {
+            renderCart();
+            window.addEventListener('cartUpdated', renderCart);
+        });
+
+        function renderCart() {
+            const items = CartManager.get();
+            const container = $('#cart-items');
+            const emptyState = $('#cart-empty');
+            const table = $('#cart-table').closest('.table-responsive');
+            
+            container.empty();
+            
+            if (items.length === 0) {
+                emptyState.removeClass('d-none');
+                table.addClass('d-none');
+                $('#cart-total, #cart-subtotal').text('$0.00');
+                return;
+            }
+            
+            emptyState.addClass('d-none');
+            table.removeClass('d-none');
+            
+            let total = 0;
+            items.forEach(item => {
+                const subtotal = item.precio * item.cantidad;
+                total += subtotal;
+                
+                container.append(`
+                    <tr class="animate-fade-in">
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center py-2">
+                                <div class="rounded-3 overflow-hidden bg-white me-3 border shadow-sm" style="width: 56px; height: 56px;">
+                                    <img src="${item.imagenUrl || '/img/no-image.png'}" class="w-100 h-100 object-fit-cover" />
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">${item.nombre}</div>
+                                    <span class="text-muted x-small">ID: ${item.productoId}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="text-center fw-medium">$${parseFloat(item.precio).toFixed(2)}</td>
+                        <td class="text-center">
+                            <div class="d-flex align-items-center justify-content-center">
+                                <button class="btn btn-sm btn-light border p-1 px-2" onclick="updateQty(${item.productoId}, -1)">-</button>
+                                <span class="mx-3 fw-bold">${item.cantidad}</span>
+                                <button class="btn btn-sm btn-light border p-1 px-2" onclick="updateQty(${item.productoId}, 1)">+</button>
+                            </div>
+                        </td>
+                        <td class="text-end fw-bold text-primary pe-4">$${subtotal.toFixed(2)}</td>
+                    </tr>
+                `);
+            });
+            
+            $('#cart-subtotal').text(`$${total.toFixed(2)}`);
+            $('#cart-total').text(`$${total.toFixed(2)}`);
+        }
+
+        function updateQty(id, delta) {
+            let cart = CartManager.get();
+            let item = cart.find(i => i.productoId === id);
+            if (item) {
+                item.cantidad += delta;
+                if (item.cantidad <= 0) {
+                    CartManager.remove(id);
+                } else {
+                    CartManager.save(cart);
+                }
+            }
+            renderCart();
+        }
+
+        function prepareCheckout() {
+            const items = CartManager.get().map(i => ({ productId: i.productoId, cantidad: i.cantidad }));
+            if (items.length === 0) {
+                Swal.fire('Carrito vacío', 'Agrega productos antes de finalizar.', 'warning');
+                return;
+            }
+
+            $.ajax({
+                url: '/Tienda/Tienda/SyncCarrito',
+                type: 'POST',
+                contentType: 'application/json',
+                data: JSON.stringify(items),
+                success: function(res) {
+                    if (res.success) {
+                        window.location.href = '/Tienda/Tienda/Checkout';
+                    } else {
+                        Swal.fire('Error', 'No se pudo sincronizar el carrito.', 'error');
+                    }
+                },
+                error: function() {
+                    Swal.fire('Error', 'Error de comunicación con el servidor.', 'error');
+                }
+            });
+        }
+    </script>
+}

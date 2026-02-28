@@ -1,0 +1,86 @@
+@model RefWeb.Models.Pedido
+@{
+    ViewData["Title"] = "Asignar Guía de Envío";
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex align-items-center mb-5">
+        <a asp-action="Index" class="btn btn-light btn-sm rounded-circle me-3 shadow-sm p-3 d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="display-6 fw-bold text-dark mb-0">Asignar Guía</h1>
+            <p class="text-muted mb-0">Pedido #@Model.Id.ToString("D6")</p>
+        </div>
+    </div>
+
+    <div class="row g-4 justify-content-center">
+        <div class="col-lg-10">
+            <div class="row g-4">
+                <div class="col-md-5">
+                    <div class="glass-card p-4 h-100">
+                        <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-info-circle me-2"></i>Información del Pedido</h5>
+                        
+                        <div class="mb-3">
+                            <label class="small text-muted d-block">Cliente</label>
+                            <span class="fw-bold text-dark">@Model.Cliente?.Nombre @Model.Cliente?.Apellidos</span>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="small text-muted d-block">Dirección de Entrega</label>
+                            <div class="p-3 bg-light rounded-3 small">
+                                <i class="fas fa-map-marker-alt text-danger me-2"></i>
+                                @Model.DireccionEntrega?.Calle, @Model.DireccionEntrega?.Colonia<br/>
+                                CP @Model.DireccionEntrega?.CodigoPostal, @Model.DireccionEntrega?.Ciudad, @Model.DireccionEntrega?.Estado
+                            </div>
+                        </div>
+
+                        <div class="d-flex justify-content-between align-items-center p-3 rounded-3 bg-primary-soft">
+                            <span class="small fw-bold">Total del Pedido</span>
+                            <span class="h5 mb-0 fw-800 text-primary">@Model.Total.ToString("C")</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-7">
+                    <div class="glass-card p-4">
+                        <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-shipping-fast me-2"></i>Detalles del Envío</h5>
+                        
+                        <form asp-action="AsignarGuia" method="post">
+                            <input type="hidden" name="pedidoId" value="@Model.Id" />
+                            
+                            <div class="row">
+                                <div class="col-md-12 mb-4">
+                                    <label for="paqueteria" class="form-label fw-bold small text-uppercase mb-2">Paquetería</label>
+                                    <select name="paqueteria" id="paqueteria" class="form-select" required>
+                                        <option value="" disabled selected>Selecciona una opción</option>
+                                        <option value="DHL" selected="@(Model.Envio?.Paqueteria == "DHL")">DHL Express</option>
+                                        <option value="FedEx" selected="@(Model.Envio?.Paqueteria == "FedEx")">FedEx</option>
+                                        <option value="Estafeta" selected="@(Model.Envio?.Paqueteria == "Estafeta")">Estafeta</option>
+                                        <option value="Paquetexpress" selected="@(Model.Envio?.Paqueteria == "Paquetexpress")">Paquetexpress</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-12 mb-4">
+                                    <label for="numeroGuia" class="form-label fw-bold small text-uppercase mb-2">Número de Guía / Tracking</label>
+                                    <input type="text" name="numeroGuia" id="numeroGuia" class="form-control fw-bold text-primary" 
+                                           value="@Model.Envio?.NumeroGuia" placeholder="Ej. ABC123456789" required />
+                                </div>
+                            </div>
+
+                            <div class="mb-4">
+                                <label for="notas" class="form-label fw-bold small text-uppercase mb-2">Instrucciones o Notas</label>
+                                <textarea name="notas" id="notas" class="form-control" rows="3" placeholder="Opcional...">@Model.Envio?.Notas</textarea>
+                            </div>
+
+                            <div class="d-grid pt-2">
+                                <button type="submit" class="btn btn-primary py-3 shadow-lg">
+                                    <i class="fas fa-save me-2"></i> Confirmar Envío
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

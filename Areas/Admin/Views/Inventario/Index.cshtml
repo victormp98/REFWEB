@@ -1,0 +1,164 @@
+@model List<RefWeb.Models.InventarioMovimiento>
+@{
+    ViewData["Title"] = "Movimientos de Inventario";
+    var productos    = ViewBag.Productos as List<RefWeb.Models.Producto> ?? new();
+    var totalPaginas = (int)(ViewBag.TotalPaginas ?? 1);
+    var paginaActual = (int)(ViewBag.PaginaActual ?? 1);
+}
+
+<div class="animate-fade-in">
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show mb-4" role="alert">
+            <i class="fas fa-check-circle me-2"></i>@TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i>@TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    <div class="d-flex align-items-center justify-content-between mb-5">
+        <div class="d-flex align-items-center">
+            <div class="icon-box icon-box-success me-4">
+                <i class="fas fa-warehouse fa-lg"></i>
+            </div>
+            <div>
+                <h1 class="display-6 fw-bold text-dark mb-0">Movimientos de Inventario</h1>
+                <p class="text-muted mb-0">Historial de entradas, salidas y ajustes de stock.</p>
+            </div>
+        </div>
+        <a asp-action="Create" class="btn btn-primary rounded-pill px-4 shadow">
+            <i class="fas fa-plus me-2"></i>Nuevo Movimiento
+        </a>
+    </div>
+
+    @* Filtros *@
+    <div class="glass-card p-3 mb-4">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-5">
+                <label class="form-label fw-bold small text-uppercase mb-1">Producto</label>
+                <select name="productoId" class="form-select form-select-sm">
+                    <option value="">— Todos —</option>
+                    @foreach (var p in productos)
+                    {
+                        <option value="@p.Id" selected="@((ViewBag.FiltroProducto?.ToString() == p.Id.ToString()))">@p.Nombre</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label fw-bold small text-uppercase mb-1">Tipo</label>
+                <select name="tipo" class="form-select form-select-sm">
+                    <option value="">— Todos —</option>
+                    <option value="Entrada"  selected="@(ViewBag.FiltroTipo == "Entrada")">Entrada</option>
+                    <option value="Salida"   selected="@(ViewBag.FiltroTipo == "Salida")">Salida</option>
+                    <option value="Ajuste"   selected="@(ViewBag.FiltroTipo == "Ajuste")">Ajuste</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-sm btn-primary w-100">
+                    <i class="fas fa-filter me-1"></i>Filtrar
+                </button>
+            </div>
+            <div class="col-md-2">
+                <a asp-action="Index" class="btn btn-sm btn-outline-secondary w-100">
+                    <i class="fas fa-times me-1"></i>Limpiar
+                </a>
+            </div>
+        </form>
+    </div>
+
+    @* Tabla *@
+    <div class="card card-modern border-0">
+        <div class="card-body p-0">
+            @if (!Model.Any())
+            {
+                <div class="text-center py-5 text-muted">
+                    <i class="fas fa-box-open fa-3x opacity-30 mb-3 d-block"></i>
+                    <p>No hay movimientos registrados con los filtros actuales.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light">
+                            <tr>
+                                <th class="ps-4">Fecha</th>
+                                <th>Producto</th>
+                                <th class="text-center">Tipo</th>
+                                <th class="text-center">Cantidad</th>
+                                <th class="text-center">Stock Anterior</th>
+                                <th class="text-center">Stock Nuevo</th>
+                                <th>Usuario</th>
+                                <th>Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var m in Model)
+                            {
+                                <tr>
+                                    <td class="ps-4">
+                                        <div class="fw-bold small">@m.Fecha.ToString("dd/MM/yyyy")</div>
+                                        <div class="text-muted" style="font-size:.72rem">@m.Fecha.ToString("HH:mm")</div>
+                                    </td>
+                                    <td>
+                                        <a asp-action="Producto" asp-route-id="@m.ProductoId" class="fw-bold text-dark text-decoration-none small">
+                                            @m.Producto?.Nombre
+                                        </a>
+                                    </td>
+                                    <td class="text-center">
+                                        @{
+                                            var (tipoBg, tipoIcon) = m.TipoMovimiento switch {
+                                                "Entrada" => ("success", "fa-arrow-circle-down"),
+                                                "Salida"  => ("danger",  "fa-arrow-circle-up"),
+                                                _         => ("warning", "fa-sliders-h")
+                                            };
+                                        }
+                                        <span class="badge bg-@tipoBg rounded-pill px-3">
+                                            <i class="fas @tipoIcon me-1"></i>@m.TipoMovimiento
+                                        </span>
+                                    </td>
+                                    <td class="text-center fw-bold">
+                                        @(m.TipoMovimiento == "Salida" ? "-" : "+")@m.Cantidad
+                                    </td>
+                                    <td class="text-center text-muted">@m.StockAnterior</td>
+                                    <td class="text-center">
+                                        <span class="fw-bold @(m.StockNuevo < m.StockAnterior ? "text-danger" : "text-success")">@m.StockNuevo</span>
+                                    </td>
+                                    <td class="text-muted small">@(m.Usuario?.Email?.Split('@')[0] ?? "—")</td>
+                                    <td class="text-muted small" style="max-width:150px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">@m.Notas</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                @* Paginación *@
+                @if (totalPaginas > 1)
+                {
+                    <div class="d-flex justify-content-center py-3">
+                        <nav>
+                            <ul class="pagination pagination-sm mb-0">
+                                @for (int i = 1; i <= totalPaginas; i++)
+                                {
+                                    <li class="page-item @(i == paginaActual ? "active" : "")">
+                                        <a class="page-link rounded-3 mx-1" asp-action="Index"
+                                           asp-route-pagina="@i"
+                                           asp-route-productoId="@ViewBag.FiltroProducto"
+                                           asp-route-tipo="@ViewBag.FiltroTipo">@i</a>
+                                    </li>
+                                }
+                            </ul>
+                        </nav>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>

@@ -1,0 +1,144 @@
+@model IEnumerable<RefWeb.Models.CorteCaja>
+@{
+    ViewData["Title"] = "Corte de Caja";
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-5 fw-bold text-dark mb-1">Corte de Caja</h1>
+            <p class="text-muted mb-0">Gestiona la apertura y cierre de turnos de venta.</p>
+        </div>
+        <div class="icon-box icon-box-primary-soft">
+            <i class="fas fa-cash-register"></i>
+        </div>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="glass-card p-3 mb-4 d-flex align-items-center" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2);">
+            <i class="fas fa-check-circle text-success me-3 fs-4"></i>
+            <span class="fw-medium">@TempData["Success"]</span>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="glass-card p-3 mb-4 d-flex align-items-center" style="background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.2);">
+            <i class="fas fa-exclamation-circle text-danger me-3 fs-4"></i>
+            <span class="fw-medium">@TempData["Error"]</span>
+        </div>
+    }
+
+    @if (ViewBag.CorteActivo != null)
+    {
+        var activo = ViewBag.CorteActivo as RefWeb.Models.CorteCaja;
+        <div class="glass-card p-4 mb-5" style="border-color: rgba(79,70,229,0.3); background: rgba(79,70,229,0.05);">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-3">
+                <div class="d-flex align-items-center">
+                    <div class="icon-box icon-box-primary-soft me-3">
+                        <i class="fas fa-lock-open"></i>
+                    </div>
+                    <div>
+                        <h5 class="fw-bold mb-0 text-primary">Turno Activo</h5>
+                        <p class="text-muted mb-0 small">Abierto desde @activo.FechaApertura.ToString("hh:mm tt") — Monto inicial: @activo.MontoInicial.ToString("C")</p>
+                    </div>
+                </div>
+                <a asp-action="Cerrar" asp-route-id="@activo.Id" class="btn btn-primary shadow-lg px-4">
+                    <i class="fas fa-cash-register me-2"></i> Cerrar Turno
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="glass-card p-4 mb-5">
+            <h5 class="fw-bold mb-4 text-dark"><i class="fas fa-door-open me-2 text-primary"></i>Abrir Nuevo Turno</h5>
+            <form asp-action="Abrir" method="post">
+                @Html.AntiForgeryToken()
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-bold small text-uppercase">Monto Inicial en Caja *</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold">$</span>
+                            <input type="number" name="montoInicial" class="form-control fw-bold" step="1" min="0" placeholder="0.00" required />
+                        </div>
+                    </div>
+                    <div class="col-md-5">
+                        <label class="form-label fw-bold small text-uppercase">Observaciones</label>
+                        <input type="text" name="observaciones" class="form-control" placeholder="Opcional..." />
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100 py-3 shadow-lg">
+                            <i class="fas fa-unlock me-2"></i> Abrir Turno
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    }
+
+    <div class="glass-card overflow-hidden">
+        <div class="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold">Historial de Cortes</h6>
+            <span class="badge bg-primary-soft">Últimos 30</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Fecha Apertura</th>
+                        <th>Cajero</th>
+                        <th class="text-center">Estado</th>
+                        <th class="text-end">Monto Inicial</th>
+                        <th class="text-end">Total Ventas</th>
+                        <th class="text-end pe-4">Cierre</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var c in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <div class="fw-bold text-dark">@c.FechaApertura.ToString("dd/MM/yyyy")</div>
+                                <div class="text-muted small">@c.FechaApertura.ToString("hh:mm tt")</div>
+                            </td>
+                            <td>
+                                <span class="small fw-medium">@c.UsuarioApertura?.UserName</span>
+                            </td>
+                            <td class="text-center">
+                                @if (c.Estado == "Abierto")
+                                {
+                                    <span class="badge bg-success-soft"><i class="fas fa-circle me-1" style="font-size: 0.5rem;"></i>Abierto</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-soft"><i class="fas fa-check-circle me-1"></i>Cerrado</span>
+                                }
+                            </td>
+                            <td class="text-end fw-medium">@c.MontoInicial.ToString("C")</td>
+                            <td class="text-end fw-bold text-primary">@(c.TotalVentas?.ToString("C") ?? "—")</td>
+                            <td class="text-end pe-4">
+                                @if (c.FechaCierre.HasValue)
+                                {
+                                    <span class="text-muted small">@c.FechaCierre.Value.ToString("hh:mm tt")</span>
+                                }
+                                else if (c.Estado == "Abierto")
+                                {
+                                    <a asp-action="Cerrar" asp-route-id="@c.Id" class="btn btn-sm btn-outline-primary px-3">
+                                        <i class="fas fa-cash-register me-1"></i> Cerrar
+                                    </a>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="6" class="text-center py-5 text-muted">No hay cortes de caja registrados.</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,113 @@
+@model IEnumerable<RefWeb.Models.ViewModels.RendimientoVendedorVM>
+@{
+    ViewData["Title"] = "Rendimiento de Vendedores";
+    string[] periodos = { "semana", "mes", "año" };
+    string pActual = ViewBag.PeriodoActual as string ?? "mes";
+}
+
+<div class="animate-fade-in d-print-block">
+    <div class="d-flex justify-content-between align-items-center mb-5 d-print-none">
+        <div>
+            <h1 class="display-5 fw-bold text-dark mb-1"><i class="fas fa-medal text-success me-3"></i>Rendimiento Empleados</h1>
+            <p class="text-muted mb-0">Ranking de ingresos generados por cada perfil vendedor.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="btn-group shadow-sm">
+                @foreach(var p in periodos)
+                {
+                    <a asp-action="RendimientoVendedores" asp-route-periodo="@p" class="btn btn-outline-secondary @(pActual == p ? "active" : "")">
+                        @(char.ToUpper(p[0]) + p.Substring(1))
+                    </a>
+                }
+            </div>
+            <a href="#" class="btn btn-outline-success shadow-sm ms-2" onclick="window.print()">
+                <i class="fas fa-print me-2"></i> Imprimir Ranking
+            </a>
+        </div>
+    </div>
+
+    <!-- Título solo para impresión -->
+    <div class="d-none d-print-block text-center mb-4">
+        <h2>Reporte de Productividad de Vendedores</h2>
+        <p>Periodo: @pActual | Fecha de Impresión: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="glass-card overflow-hidden">
+                <div class="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0 fw-bold">Leaderboard de Ventas</h6>
+                    <span class="badge bg-success-soft text-success">@Model.Count() Perfiles Registrados</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-white">
+                            <tr>
+                                <th class="ps-4">Posición</th>
+                                <th>Vendedor / Atendedor</th>
+                                <th class="text-center">Tickets Cobrados</th>
+                                <th class="text-end pe-4">Ingreso Total ($)</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (!Model.Any())
+                            {
+                                <tr>
+                                    <td colspan="4" class="text-center py-5 text-muted">
+                                        <i class="fas fa-store-slash fa-3x opacity-50 mb-3 d-block"></i>
+                                        Sin ventas registradas en este periodo.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                int rank = 1;
+                                decimal maxTotal = Model.Max(m => m.TotalVendido);
+                                @foreach (var m in Model)
+                                {
+                                    // Cálculo de barra de progreso proporcional al mejor vendedor
+                                    decimal widthPerc = maxTotal > 0 ? (m.TotalVendido / maxTotal) * 100M : 0;
+                                    
+                                    <tr>
+                                        <td class="ps-4">
+                                            @if (rank == 1) { <span class="fs-4 text-warning fw-bold">🥇</span> }
+                                            else if (rank == 2) { <span class="fs-5 text-secondary fw-bold">🥈</span> }
+                                            else if (rank == 3) { <span style="color:#cd7f32" class="fs-5 fw-bold">🥉</span> }
+                                            else { <span class="text-muted fw-bold ms-2">#@rank</span> }
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark fs-5">@m.Vendedor</div>
+                                            <div class="small text-muted"><i class="fas fa-envelope me-1"></i> @m.Email</div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge border text-dark fs-6 font-monospace px-3 py-2 bg-light">@m.Tickets</span>
+                                        </td>
+                                        <td class="text-end pe-4 w-25">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="fw-800 text-success fs-5">@m.TotalVendido.ToString("C")</span>
+                                                <div class="progress mt-1 w-100" style="height: 6px;">
+                                                    <div class="progress-bar @(rank == 1 ? "bg-warning" : "bg-success")" role="progressbar" style="width: @widthPerc%" aria-valuenow="@widthPerc" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    rank++;
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    @@media print {
+        .d-print-none { display: none !important; }
+        .d-print-block { display: block !important; }
+        .glass-card { border: 1px solid #ddd !important; box-shadow: none !important; background: white !important; }
+        .progress { border: 1px solid #ddd !important; }
+        .progress-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>

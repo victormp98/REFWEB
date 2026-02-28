@@ -1,0 +1,42 @@
+﻿@using Microsoft.AspNetCore.Identity
+@inject SignInManager<IdentityUser> SignInManager
+@inject UserManager<IdentityUser> UserManager
+
+<ul class="navbar-nav">
+@if (SignInManager.IsSignedIn(User))
+{
+    <li class="nav-item dropdown">
+        <a class="nav-link dropdown-toggle text-dark fw-bold d-flex align-items-center" href="#" id="userDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2 shadow-sm" style="width: 35px; height: 35px; font-size: 0.9rem;">
+                @(User.Identity?.Name?.Substring(0, 1).ToUpper() ?? "U")
+            </div>
+            @User.Identity?.Name
+        </a>
+        <ul class="dropdown-menu dropdown-menu-end shadow-lg border-0 mt-2 rounded-4" aria-labelledby="userDropdown">
+            <li><h6 class="dropdown-header small text-muted fw-bold">MI CUENTA</h6></li>
+            @if (User.IsInRole("Cliente"))
+            {
+                <li><a class="dropdown-item py-2" asp-area="Tienda" asp-controller="Tienda" asp-action="MisPedidos"><i class="fas fa-box-open me-2 text-primary opacity-75"></i>Mis Pedidos</a></li>
+                <li><a class="dropdown-item py-2" asp-area="Tienda" asp-controller="Cuenta" asp-action="LibretaDirecciones"><i class="fas fa-map-marker-alt me-2 text-danger opacity-75"></i>Mis Direcciones</a></li>
+                <li><hr class="dropdown-divider opacity-50"></li>
+            }
+            <li><a class="dropdown-item py-2" asp-area="Identity" asp-page="/Account/Manage/Index"><i class="fas fa-user-cog me-2 text-secondary opacity-75"></i>Configuración</a></li>
+            <li><hr class="dropdown-divider opacity-50"></li>
+            <li>
+                <form class="form-inline m-0 p-0" asp-area="Identity" asp-page="/Account/Logout" asp-route-returnUrl="@Url.Action("Index", "Home", new { area = "" })">
+                    <button type="submit" class="dropdown-item py-2 text-danger fw-bold"><i class="fas fa-sign-out-alt me-2"></i>Cerrar Sesión</button>
+                </form>
+            </li>
+        </ul>
+    </li>
+}
+else
+{
+    <li class="nav-item">
+        <a class="btn btn-light rounded-pill px-4 fw-bold shadow-sm me-2" asp-area="Identity" asp-page="/Account/Register">Crear Cuenta</a>
+    </li>
+    <li class="nav-item">
+        <a class="btn btn-primary rounded-pill px-4 fw-bold shadow-sm" asp-area="Identity" asp-page="/Account/Login"><i class="fas fa-user me-2"></i>Ingresar</a>
+    </li>
+}
+</ul>

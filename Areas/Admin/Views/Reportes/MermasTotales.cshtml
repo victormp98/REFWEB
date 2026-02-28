@@ -1,0 +1,134 @@
+@model IEnumerable<RefWeb.Models.Merma>
+@{
+    ViewData["Title"] = "Reporte de Mermas";
+    string[] periodos = { "hoy", "semana", "mes", "año" };
+    string pActual = ViewBag.PeriodoActual as string ?? "mes";
+}
+
+<div class="animate-fade-in d-print-block">
+    <div class="d-flex justify-content-between align-items-center mb-5 d-print-none">
+        <div>
+            <h1 class="display-5 fw-bold text-dark mb-1"><i class="fas fa-exclamation-triangle text-warning me-3"></i>Reporte de Mermas</h1>
+            <p class="text-muted mb-0">Impacto financiero por pérdida de inventario.</p>
+        </div>
+        <div class="d-flex gap-2">
+            <div class="btn-group shadow-sm">
+                @foreach(var p in periodos)
+                {
+                    <a asp-action="MermasTotales" asp-route-periodo="@p" class="btn btn-outline-secondary @(pActual == p ? "active" : "")">
+                        @(char.ToUpper(p[0]) + p.Substring(1))
+                    </a>
+                }
+            </div>
+            <a href="#" class="btn btn-outline-danger shadow-sm ms-2" onclick="window.print()">
+                <i class="fas fa-file-pdf me-2"></i> Imprimir / PDF
+            </a>
+        </div>
+    </div>
+
+    <!-- Título solo para impresión -->
+    <div class="d-none d-print-block text-center mb-4">
+        <h2>Reporte de Mermas</h2>
+        <p>Periodo: @pActual | Fecha de Impresión: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-6">
+            <div class="glass-card p-4 border-0 d-print-border" style="background: linear-gradient(135deg, #ef4444, #b91c1c); color: white;">
+                <div class="small fw-bold text-white-50 text-uppercase mb-2 d-print-text-dark">Impacto Financiero (Costo Perdido)</div>
+                <h2 class="fw-800 mb-0 d-print-text-dark">@(((decimal)ViewBag.TotalPerdido).ToString("C"))</h2>
+                <div class="mt-3 fs-3 opacity-25 text-end d-print-none">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="glass-card p-4 d-print-border">
+                <div class="small fw-bold text-muted text-uppercase mb-2">Artículos Mermados</div>
+                <h2 class="fw-800 mb-0">@ViewBag.TotalArticulos</h2>
+                <div class="mt-3 fs-3 text-warning-soft text-end d-print-none">
+                    <i class="fas fa-boxes"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card overflow-hidden d-print-border">
+        <div class="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold">Desglose de Mermas</h6>
+            <span class="badge bg-warning text-dark d-print-none">@Model.Count() Registros</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Fecha</th>
+                        <th>Producto / SKU</th>
+                        <th>Tipo y Motivo</th>
+                        <th class="text-center">Responsable</th>
+                        <th class="text-center">Cantidad</th>
+                        <th class="text-end">Costo Unit.</th>
+                        <th class="text-end pe-4">Pérdida Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @if (!Model.Any())
+                    {
+                        <tr>
+                            <td colspan="7" class="text-center py-5 text-muted">
+                                <i class="fas fa-check-circle fa-3x text-success opacity-50 mb-3 d-block d-print-none"></i>
+                                Todo en orden. No existen mermas en este periodo.
+                            </td>
+                        </tr>
+                    }
+                    else
+                    {
+                        @foreach (var m in Model)
+                        {
+                            decimal costo = m.Producto?.Costo ?? 0;
+                            var perdido = m.Cantidad * costo;
+                            <tr>
+                                <td class="ps-4">
+                                    <span class="text-muted small">@m.Fecha.ToString("dd/MM/yyyy HH:mm")</span>
+                                </td>
+                                <td>
+                                    <div class="fw-bold text-dark">@m.Producto?.Nombre</div>
+                                    <div class="small text-muted">SKU: @m.Producto?.CodigoSKU</div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border me-1">@m.TipoMerma</span>
+                                    <div class="small text-secondary mt-1 fst-italic">@m.Motivo</div>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border d-print-border-0"><i class="fas fa-user me-1 d-print-none"></i> @(m.Responsable?.UserName ?? "-")</span>
+                                </td>
+                                <td class="text-center">
+                                    <span class="fw-bold text-danger">@m.Cantidad</span>
+                                </td>
+                                <td class="text-end text-muted small">
+                                    @costo.ToString("C")
+                                </td>
+                                <td class="text-end pe-4">
+                                    <span class="fw-bold text-danger">@perdido.ToString("C")</span>
+                                </td>
+                            </tr>
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+<style>
+    @@media print {
+        .d-print-none { display: none !important; }
+        .d-print-block { display: block !important; }
+        .d-print-border { border: 1px solid #ddd !important; box-shadow: none !important; }
+        .d-print-border-0 { border: none !important; background: transparent !important; }
+        .d-print-text-dark { color: #000 !important; }
+        .glass-card { background: white !important; color: black !important; }
+        body { background: white; padding: 0; margin: 0; }
+        .container { max-width: 100%; padding: 0; }
+        th { background-color: #f8f9fa !important; -webkit-print-color-adjust: exact; }
+    }
+</style>

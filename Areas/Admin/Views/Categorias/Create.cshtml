@@ -1,0 +1,52 @@
+@model RefWeb.Models.Categoria
+@{
+    ViewData["Title"] = "Nueva Categoría";
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex align-items-center mb-5">
+        <a asp-action="Index" class="btn btn-light btn-sm rounded-circle me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="display-6 fw-bold text-dark mb-0">Nueva Categoría</h1>
+            <p class="text-muted mb-0">Agrega una nueva categoría al catálogo.</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-6">
+            <div class="glass-card p-4">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-tag me-2"></i>Datos de la Categoría</h5>
+
+                <form asp-action="Create">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger small" style="display:none;"></div>
+
+                    <div class="mb-4">
+                        <label asp-for="Nombre" class="form-label fw-bold small text-uppercase">Nombre *</label>
+                        <input asp-for="Nombre" class="form-control" placeholder="Ej: Lubricantes, Frenos, Suspensión..." autofocus />
+                        <span asp-validation-for="Nombre" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-4">
+                        <label asp-for="Descripcion" class="form-label fw-bold small text-uppercase">Descripción</label>
+                        <textarea asp-for="Descripcion" class="form-control" rows="3"
+                                  placeholder="Describe brevemente qué productos incluye esta categoría..."></textarea>
+                        <span asp-validation-for="Descripcion" class="text-danger small"></span>
+                    </div>
+
+                    <div class="d-grid gap-3 pt-2">
+                        <button type="submit" class="btn btn-primary py-3 shadow-lg">
+                            <i class="fas fa-save me-2"></i> Crear Categoría
+                        </button>
+                        <a asp-action="Index" class="btn btn-link text-muted text-decoration-none">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

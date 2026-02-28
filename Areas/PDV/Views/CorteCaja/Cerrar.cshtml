@@ -1,0 +1,96 @@
+@model RefWeb.Models.CorteCaja
+@{
+    ViewData["Title"] = "Cerrar Turno";
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex align-items-center mb-5">
+        <a asp-action="Index" class="btn btn-light btn-sm rounded-circle me-3 shadow-sm d-flex align-items-center justify-content-center" style="width: 45px; height: 45px;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="display-6 fw-bold text-dark mb-0">Cerrar Turno</h1>
+            <p class="text-muted mb-0">Iniciado el @Model.FechaApertura.ToString("dd/MM/yyyy") a las @Model.FechaApertura.ToString("hh:mm tt")</p>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Resumen del turno -->
+        <div class="col-lg-7">
+            <div class="glass-card p-4 mb-4">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-chart-bar me-2"></i>Resumen del Turno</h5>
+
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light text-center">
+                            <div class="text-muted small fw-bold text-uppercase">Monto Inicial</div>
+                            <div class="h3 fw-800 mt-2 text-dark">@Model.MontoInicial.ToString("C")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 bg-light text-center">
+                            <div class="text-muted small fw-bold text-uppercase">Núm. de Ventas</div>
+                            <div class="h3 fw-800 mt-2 text-dark">@ViewBag.NumeroVentas</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 text-center" style="background: rgba(16,185,129,0.08);">
+                            <div class="text-success small fw-bold text-uppercase">Efectivo</div>
+                            <div class="h4 fw-800 mt-2 text-success">@ViewBag.TotalEfectivo.ToString("C")</div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="p-3 rounded-3 text-center" style="background: rgba(79,70,229,0.08);">
+                            <div class="text-primary small fw-bold text-uppercase">Tarjeta</div>
+                            <div class="h4 fw-800 mt-2 text-primary">@ViewBag.TotalTarjeta.ToString("C")</div>
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="p-4 rounded-3 text-center" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;">
+                            <div class="text-white-50 small fw-bold text-uppercase">Total General del Turno</div>
+                            <div class="display-4 fw-800 mt-2">@ViewBag.TotalVentas.ToString("C")</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Formulario de cierre -->
+        <div class="col-lg-5">
+            <div class="glass-card p-4 sticky-top" style="top: 100px;">
+                <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-lock me-2"></i>Confirmar Cierre</h5>
+
+                <form asp-action="Cerrar" asp-route-id="@Model.Id" method="post">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase">Dinero en Caja al Cerrar *</label>
+                        <div class="input-group">
+                            <span class="input-group-text bg-light fw-bold">$</span>
+                            <input type="number" name="montoFinal" class="form-control fw-bold text-primary fs-5"
+                                   step="1" min="0" placeholder="0.00" required />
+                        </div>
+                        <p class="text-muted x-small mt-2">
+                            Monto inicial: @Model.MontoInicial.ToString("C") +
+                            ventas en efectivo: @ViewBag.TotalEfectivo.ToString("C")
+                        </p>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase">Observaciones del Cierre</label>
+                        <textarea name="observaciones" class="form-control" rows="3"
+                                  placeholder="Notas sobre el turno..."></textarea>
+                    </div>
+
+                    <div class="d-grid gap-3">
+                        <button type="submit" class="btn btn-primary py-3 shadow-lg"
+                                onclick="return confirm('¿Confirmas el cierre del turno?')">
+                            <i class="fas fa-cash-register me-2"></i> Confirmar Cierre
+                        </button>
+                        <a asp-action="Index" class="btn btn-link text-muted text-decoration-none">Cancelar</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,173 @@
+@{
+    ViewData["Title"] = "Nuevo Movimiento de Inventario";
+    var productos   = ViewBag.Productos as List<RefWeb.Models.Producto> ?? new();
+    var productoId  = ViewBag.ProductoId as int?;
+    var stockActual = ViewBag.StockActual as int? ?? 0;
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex align-items-center mb-5">
+        <a asp-action="Index" class="btn btn-light btn-sm rounded-circle me-3 shadow-sm d-flex align-items-center justify-content-center" style="width:45px;height:45px;">
+            <i class="fas fa-arrow-left"></i>
+        </a>
+        <div>
+            <h1 class="display-6 fw-bold text-dark mb-0">Nuevo Movimiento</h1>
+            <p class="text-muted mb-0">Registra una entrada, salida o ajuste de inventario.</p>
+        </div>
+    </div>
+
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <form method="post" asp-action="Create">
+                @Html.AntiForgeryToken()
+
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-boxes me-2"></i>Producto</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase">Seleccionar Producto *</label>
+                        <select name="productoId" id="selectProducto" class="form-select" required onchange="actualizarStock()">
+                            <option value="">— Seleccionar —</option>
+                            @foreach (var p in productos)
+                            {
+                                <option value="@p.Id"
+                                        data-stock="@p.Stock"
+                                        data-min="@p.StockMinimo"
+                                        data-cat="@p.Categoria?.Nombre"
+                                        selected="@(productoId == p.Id)">
+                                    @p.Nombre (@p.CodigoSKU)
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <div id="stockInfo" class="d-none">
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <div class="rounded-3 bg-light text-center p-2">
+                                    <div class="fw-bold fs-4" id="stockActualVal">—</div>
+                                    <div class="text-muted small">Stock actual</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="rounded-3 bg-light text-center p-2">
+                                    <div class="fw-bold fs-4 text-warning" id="stockMinVal">—</div>
+                                    <div class="text-muted small">Stock mínimo</div>
+                                </div>
+                            </div>
+                            <div class="col-4">
+                                <div class="rounded-3 bg-light text-center p-2">
+                                    <div class="fw-bold fs-4 text-primary" id="stockNuevoPreview">—</div>
+                                    <div class="text-muted small">Stock nuevo</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="glass-card p-4 mb-4">
+                    <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-exchange-alt me-2"></i>Movimiento</h5>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase">Tipo de Movimiento *</label>
+                        <div class="row g-2">
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="tipoMovimiento" id="tipoEntrada" value="Entrada" checked onchange="calcularPreview()">
+                                <label class="btn btn-outline-success w-100" for="tipoEntrada">
+                                    <i class="fas fa-arrow-circle-down d-block fs-4 mb-1"></i>Entrada
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="tipoMovimiento" id="tipoSalida" value="Salida" onchange="calcularPreview()">
+                                <label class="btn btn-outline-danger w-100" for="tipoSalida">
+                                    <i class="fas fa-arrow-circle-up d-block fs-4 mb-1"></i>Salida
+                                </label>
+                            </div>
+                            <div class="col-4">
+                                <input type="radio" class="btn-check" name="tipoMovimiento" id="tipoAjuste" value="Ajuste" onchange="calcularPreview()">
+                                <label class="btn btn-outline-warning w-100" for="tipoAjuste">
+                                    <i class="fas fa-sliders-h d-block fs-4 mb-1"></i>Ajuste
+                                </label>
+                            </div>
+                        </div>
+                        <p id="tipoDescripcion" class="text-muted small mt-2">
+                            <i class="fas fa-info-circle me-1"></i>Suma la cantidad al stock actual del producto.
+                        </p>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase" id="lblCantidad">Cantidad *</label>
+                        <input type="number" name="cantidad" id="inputCantidad" class="form-control form-control-lg text-center fw-bold"
+                               min="1" required onkeyup="calcularPreview()" onchange="calcularPreview()" value="1" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-uppercase">Notas u Observaciones</label>
+                        <textarea name="notas" class="form-control" rows="2" placeholder="Ej. Compra a proveedor XYZ, factura #1234..."></textarea>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg shadow-lg">
+                        <i class="fas fa-save me-2"></i>Registrar Movimiento
+                    </button>
+                    <a asp-action="Index" class="btn btn-link text-muted text-decoration-none">Cancelar</a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const descripciones = {
+        Entrada: '<i class="fas fa-info-circle me-1"></i>Suma la cantidad al stock actual del producto.',
+        Salida:  '<i class="fas fa-info-circle me-1"></i>Resta la cantidad del stock actual del producto.',
+        Ajuste:  '<i class="fas fa-info-circle me-1"></i>Establece el valor exacto del stock (cantidad = nuevo stock).'
+    };
+    const etiquetas = {
+        Entrada: 'Cantidad a entrar *',
+        Salida:  'Cantidad a salir *',
+        Ajuste:  'Nuevo stock total *'
+    };
+
+    function actualizarStock() {
+        const sel   = document.getElementById('selectProducto');
+        const opt   = sel.options[sel.selectedIndex];
+        const stock = parseInt(opt.dataset.stock) || 0;
+        const min   = parseInt(opt.dataset.min)   || 0;
+
+        document.getElementById('stockInfo').classList.remove('d-none');
+        document.getElementById('stockActualVal').textContent = stock;
+        document.getElementById('stockMinVal').textContent    = min;
+        calcularPreview();
+    }
+
+    function calcularPreview() {
+        const tipo     = document.querySelector('input[name="tipoMovimiento"]:checked')?.value || 'Entrada';
+        const cantidad = parseInt(document.getElementById('inputCantidad').value) || 0;
+        const sel      = document.getElementById('selectProducto');
+        const opt      = sel.options[sel.selectedIndex];
+        const stock    = parseInt(opt?.dataset?.stock) || 0;
+
+        document.getElementById('tipoDescripcion').innerHTML = descripciones[tipo] || '';
+        document.getElementById('lblCantidad').textContent   = etiquetas[tipo] || 'Cantidad *';
+
+        let nuevo;
+        if (tipo === 'Entrada') nuevo = stock + cantidad;
+        else if (tipo === 'Salida') nuevo = Math.max(0, stock - cantidad);
+        else nuevo = cantidad;
+
+        const el = document.getElementById('stockNuevoPreview');
+        el.textContent = nuevo;
+        el.className = 'fw-bold fs-4 ' + (nuevo < stock ? 'text-danger' : nuevo > stock ? 'text-success' : 'text-primary');
+    }
+
+    // Inicializar si venía con productoId
+    document.addEventListener('DOMContentLoaded', () => {
+        const sel = document.getElementById('selectProducto');
+        if (sel?.value) actualizarStock();
+        document.querySelectorAll('input[name="tipoMovimiento"]').forEach(r => r.addEventListener('change', calcularPreview));
+    });
+</script>
+}

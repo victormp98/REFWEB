@@ -1,0 +1,176 @@
+@model IEnumerable<RefWeb.Models.Producto>
+@{
+    ViewData["Title"] = "Gestión de Productos";
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-5 fw-bold text-dark mb-1">Productos</h1>
+            <p class="text-muted mb-0">Administra el inventario y catálogo de la refaccionaria.</p>
+        </div>
+        <a asp-action="Create" class="btn btn-primary shadow-lg">
+            <i class="fas fa-plus me-2"></i> Nuevo Producto
+        </a>
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="glass-card p-3 mb-4 d-flex align-items-center animate-fade-in" style="background: rgba(16,185,129,0.08); border-color: rgba(16,185,129,0.2);">
+            <i class="fas fa-check-circle text-success me-3 fs-4"></i>
+            <span class="fw-medium">@TempData["Success"]</span>
+        </div>
+    }
+
+    <!-- Barra de búsqueda y filtros -->
+    <div class="glass-card p-3 mb-4">
+        <div class="row g-2 align-items-center">
+            <div class="col-md-6">
+                <div class="input-group">
+                    <span class="input-group-text bg-transparent border-end-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="buscarProducto" class="form-control border-start-0 ps-0" placeholder="Buscar por nombre o SKU…" oninput="filtrarProductos()">
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="form-check form-switch mt-1">
+                    <input class="form-check-input" type="checkbox" id="soloStockBajo" onchange="filtrarProductos()">
+                    <label class="form-check-label" for="soloStockBajo">Solo stock bajo</label>
+                </div>
+            </div>
+            <div class="col-md-3 text-md-end">
+                <span id="resultadoConteo" class="text-muted small"></span>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card overflow-hidden">
+        <div class="table-responsive">
+            <table id="tablaProductos" class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4" style="width: 70px;">Imagen</th>
+                        <th>Producto</th>
+                        <th>Categoría</th>
+                        <th class="text-center">Precio</th>
+                        <th class="text-center">Stock</th>
+                        <th>Estado</th>
+                        <th class="text-end pe-4">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model)
+                    {
+                        <tr class="@(!item.Activo ? "opacity-50" : "")" 
+                            data-nombre="@item.Nombre"
+                            data-sku="@item.CodigoSKU"
+                            data-stockbajo="@(item.Stock <= item.StockMinimo ? "true" : "false")">
+                            <td class="ps-4">
+                                <div class="rounded-3 overflow-hidden border shadow-sm" style="width: 48px; height: 48px; background: #f1f5f9;">
+                                    @if (!string.IsNullOrEmpty(item.ImagenUrl))
+                                    {
+                                        <img src="@item.ImagenUrl" class="w-100 h-100 object-fit-cover" alt="@item.Nombre" />
+                                    }
+                                    else
+                                    {
+                                        <div class="w-100 h-100 d-flex align-items-center justify-content-center text-muted">
+                                            <i class="fas fa-image fa-sm"></i>
+                                        </div>
+                                    }
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-bold text-dark">@item.Nombre</div>
+                                <div class="text-muted x-small">SKU: @item.CodigoSKU</div>
+                            </td>
+                            <td>
+                                <span class="badge bg-primary-soft">@(item.Categoria?.Nombre ?? "—")</span>
+                            </td>
+                            <td class="text-center fw-bold text-primary">
+                                @item.Precio.ToString("C")
+                            </td>
+                            <td class="text-center">
+                                <span class="badge @(item.Stock <= item.StockMinimo ? "bg-danger-soft" : "bg-success-soft") fw-bold">
+                                    @item.Stock uds.
+                                </span>
+                            </td>
+                            <td>
+                                @if (item.Activo)
+                                {
+                                    <span class="badge bg-success-soft"><i class="fas fa-check-circle me-1"></i>Activo</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-danger-soft"><i class="fas fa-times-circle me-1"></i>Inactivo</span>
+                                }
+                            </td>
+                            <td class="text-end pe-4">
+                                <div class="d-flex justify-content-end gap-2">
+                                    <a asp-action="Edit" asp-route-id="@item.Id" class="btn btn-sm btn-outline-primary px-3">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+                                    <form asp-action="Toggle" asp-route-id="@item.Id" method="post" class="d-inline" id="toggle-form-@item.Id">
+                                        @Html.AntiForgeryToken()
+                                        <button type="button" class="btn btn-sm @(item.Activo ? "btn-outline-danger" : "btn-outline-success") px-3"
+                                                onclick="confirmToggle(@item.Id, '@item.Nombre', @item.Activo.ToString().ToLower())">
+                                            <i class="fas @(item.Activo ? "fa-eye-slash" : "fa-eye")"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // ── Filtro en tiempo real ──────────────────────────────────────────
+        function filtrarProductos() {
+            const txt = document.getElementById('buscarProducto').value.toLowerCase();
+            const soloStockBajo = document.getElementById('soloStockBajo').checked;
+            const filas = document.querySelectorAll('#tablaProductos tbody tr');
+            let visibles = 0;
+
+            filas.forEach(fila => {
+                const nombre = (fila.dataset.nombre || '').toLowerCase();
+                const sku    = (fila.dataset.sku    || '').toLowerCase();
+                const stockBajo = fila.dataset.stockbajo === 'true';
+
+                const coincide = nombre.includes(txt) || sku.includes(txt);
+                const filtroStock = !soloStockBajo || stockBajo;
+
+                if (coincide && filtroStock) { fila.style.display = ''; visibles++; }
+                else                         { fila.style.display = 'none'; }
+            });
+
+            const total = filas.length;
+            document.getElementById('resultadoConteo').textContent =
+                txt || soloStockBajo ? `Mostrando ${visibles} de ${total}` : `${total} productos`;
+        }
+
+        // Inicializar contador
+        window.addEventListener('DOMContentLoaded', () => filtrarProductos());
+
+        function confirmToggle(id, nombre, activo) {
+            const accion = activo ? 'desactivar' : 'activar';
+            const icon = activo ? 'warning' : 'question';
+            Swal.fire({
+                title: `¿${accion.charAt(0).toUpperCase() + accion.slice(1)} producto?`,
+                text: `"${nombre}" quedará ${activo ? 'inactivo y no aparecerá en la tienda' : 'activo y visible en el catálogo'}.`,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonText: `Sí, ${accion}`,
+                cancelButtonText: 'Cancelar',
+                customClass: {
+                    confirmButton: activo ? 'btn btn-danger ms-2' : 'btn btn-success ms-2',
+                    cancelButton: 'btn btn-light'
+                },
+                buttonsStyling: false
+            }).then(r => { if (r.isConfirmed) document.getElementById(`toggle-form-${id}`).submit(); });
+        }
+    </script>
+}
+

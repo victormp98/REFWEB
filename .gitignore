@@ -1,0 +1,48 @@
+## .gitignore - RefWeb ASP.NET Core
+
+# ── Build ──────────────────────────────────────────
+[Bb]in/
+[Oo]bj/
+*.user
+*.suo
+.vs/
+.vscode/
+
+# ── .NET / Rider ───────────────────────────────────
+*.rsuser
+.idea/
+*.DotSettings.user
+
+# ── Secretos y configuración de producción ─────────
+appsettings.Production.json
+appsettings.Staging.json
+appsettings.Development.json
+
+# SÓLO se sube appsettings.json base (sin valores reales).
+# Los valores reales se gestionan como variables de entorno en Coolify.
+
+# ── Uploads / Imágenes de usuarios ─────────────────
+# Estos se gestionan como VOLUMEN persistente en Docker/Coolify
+wwwroot/uploads/
+wwwroot/img/productos/
+
+# ── Logs ───────────────────────────────────────────
+*.log
+logs/
+
+# ── NuGet ──────────────────────────────────────────
+*.nupkg
+*.snupkg
+.nuget/
+packages/
+
+# ── Entity Framework migrations temp ───────────────
+# (los archivos de migraciones SÍ se incluyen en git)
+
+# ── OS ─────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Docker ─────────────────────────────────────────
+# docker-compose.override.yml  (comentado: se sube para referencia)

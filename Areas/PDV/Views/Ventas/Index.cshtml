@@ -1,0 +1,700 @@
+@{
+    ViewData["Title"] = "Punto de Venta";
+}
+
+<div class="animate-fade-in px-4">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-5 fw-bold text-dark mb-1">Punto de Venta</h1>
+            <p class="text-muted mb-0">Gestión de ventas en mostrador y facturación rápida.</p>
+        </div>
+        <div class="icon-box icon-box-primary-soft">
+            <i class="fas fa-cash-register"></i>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Panel Izquierdo: Buscador y Carrito -->
+        <div class="col-lg-8">
+            <div class="glass-card overflow-hidden">
+                <div class="bg-primary-soft p-4 d-flex justify-content-between align-items-center border-bottom">
+                    <h5 class="mb-0 fw-bold text-primary"><i class="fas fa-shopping-basket me-2"></i>Nueva Venta</h5>
+                    <span class="badge bg-primary shadow-sm" id="badge-items">0 Artículos</span>
+                </div>
+                <div class="p-4">
+                    <div class="input-group mb-4 shadow-sm rounded-3 overflow-hidden">
+                        <span class="input-group-text bg-white border-end-0 ps-3 text-muted">
+                            <i class="fas fa-search"></i>
+                        </span>
+                        <input type="text" id="txtCodigoBarras" class="form-control border-start-0 border-end-0 py-3 shadow-none fw-bold" 
+                               placeholder="Ingrese nombre, código, o SKU del producto..." autofocus>
+                        <button class="btn btn-primary px-4 fw-bold" type="button" id="btnBuscar" onclick="window.realizarBusqueda()">
+                            <i class="fas fa-search me-1"></i> Buscar
+                        </button>
+                    </div>
+
+                    <!-- Contenedor Resultados Manuales -->
+                    <div id="contenedorResultados" class="mb-4 d-none animate-fade-in">
+                        <h6 class="text-muted fw-bold mb-3"><i class="fas fa-list me-2"></i>Resultados de Búsqueda:</h6>
+                        <div class="list-group shadow-sm border-0" id="listaResultados" style="max-height: 280px; overflow-y: auto;">
+                            <!-- Inyectado por Javascript -->
+                        </div>
+                    </div>
+
+                    <div class="table-responsive rounded-3 border" style="max-height: 500px; overflow-y: auto;">
+                        <table class="table table-hover align-middle mb-0" id="tablaCarrito">
+                            <thead>
+                                <tr>
+                                    <th class="ps-4">Producto</th>
+                                    <th class="text-center">Precio</th>
+                                    <th class="text-center" style="width: 150px;">Cantidad</th>
+                                    <th class="text-end">Subtotal</th>
+                                    <th class="text-center pe-4">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr id="row-vacio">
+                                    <td colspan="5" class="text-center py-5">
+                                        <div class="opacity-10 mb-2">
+                                            <i class="fas fa-shopping-cart fa-3x"></i>
+                                        </div>
+                                        <div class="text-muted italic">No hay productos en el carrito</div>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Panel Derecho: Totales y Finalización -->
+        <div class="col-lg-4">
+            <div class="glass-card sticky-top" style="top: 100px;">
+                <div class="bg-primary-soft p-4 border-bottom">
+                    <h5 class="fw-bold mb-0 text-primary">Resumen de Venta</h5>
+                </div>
+                <div class="p-4">
+                    <div class="d-flex justify-content-between mb-3 text-muted">
+                        <span class="fw-medium">Subtotal</span>
+                        <span id="lblSubtotal" class="fw-bold text-dark">$0.00</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-3 text-muted">
+                        <span class="fw-medium">IVA (0%)</span>
+                        <span id="lblIVA" class="fw-bold text-dark">$0.00</span>
+                    </div>
+                    <hr class="opacity-10 my-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h4 class="mb-0 fw-bold text-dark">Total</h4>
+                        <h2 class="mb-0 fw-bold text-primary" id="lblTotal">$0.00</h2>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase letter-spacing-1 mb-3">Método de Pago</label>
+                        <div class="d-flex flex-column gap-2">
+                            <input type="radio" class="btn-check" name="metodoPago" id="pagoEfectivo" value="Efectivo" checked>
+                            <label class="btn btn-outline-primary w-100 py-3 text-start d-flex align-items-center" for="pagoEfectivo">
+                                <i class="fas fa-money-bill-wave me-3 fs-5"></i>
+                                <span>Efectivo</span>
+                                <i class="fas fa-check-circle ms-auto check-icon"></i>
+                            </label>
+
+                            <input type="radio" class="btn-check" name="metodoPago" id="pagoTarjeta" value="Tarjeta">
+                            <label class="btn btn-outline-primary w-100 py-3 text-start d-flex align-items-center" for="pagoTarjeta">
+                                <i class="fas fa-credit-card me-3 fs-5"></i>
+                                <span>Tarjeta Bancaria</span>
+                                <i class="fas fa-check-circle ms-auto check-icon"></i>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- CAMBIO: solo visible cuando paga en Efectivo -->
+                    <div id="panelEfectivo" class="mb-4 p-3 rounded-3 border border-success-subtle bg-success-subtle">
+                        <label class="form-label fw-bold small text-uppercase text-success mb-2">
+                            <i class="fas fa-hand-holding-usd me-1"></i> ¿Con cuánto paga?
+                        </label>
+                        <div class="input-group mb-2">
+                            <span class="input-group-text bg-white fw-bold">$</span>
+                            <input type="number" id="inputEfectivoRecibido" class="form-control fw-bold fs-5 shadow-none"
+                                   placeholder="0.00" min="0" step="0.01">
+                        </div>
+                        <!-- Atajos rápidos -->
+                        <div class="d-flex gap-1 flex-wrap mb-3" id="botonesRapidos"></div>
+                        <div class="d-flex justify-content-between align-items-center">
+                            <span class="fw-bold text-success">Cambio a devolver:</span>
+                            <span id="lblCambio" class="fw-800 fs-4 text-success">$0.00</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-bold small text-uppercase letter-spacing-1">Observaciones</label>
+                        <textarea id="txtNotas" class="form-control shadow-none bg-light border-0" rows="2" placeholder="Notas internas..."></textarea>
+                    </div>
+
+                    <div class="d-grid mt-4">
+                        <button class="btn btn-primary py-3 shadow-lg" id="btnFinalizarVenta">
+                            <i class="fas fa-check-double me-2"></i> FINALIZAR VENTA (F12)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL TICKET DE VENTA -->
+<div class="modal fade" id="modalTicket" tabindex="-1" aria-labelledby="modalTicketLabel" aria-hidden="true" data-bs-backdrop="static">
+    <div class="modal-dialog modal-sm">
+        <div class="modal-content">
+            <div class="modal-body p-0">
+                <!-- Zona imprimible -->
+                <div id="ticketImprimible" class="p-4" style="font-family: 'Courier New', monospace; font-size: 13px; max-width: 320px; margin: 0 auto;">
+                    <div class="text-center mb-3">
+                        <div style="font-size:22px; font-weight:900; letter-spacing:2px;">REFWEB</div>
+                        <div style="font-size:11px; color:#666;">Refaccionaria Web S.A. de C.V.</div>
+                        <div style="font-size:10px; color:#888;" id="ticketFecha"></div>
+                    </div>
+                    <div style="border-top:2px dashed #333; border-bottom:2px dashed #333; padding:6px 0; margin-bottom:8px;">
+                        <div class="d-flex justify-content-between">
+                            <span style="font-size:10px;">FOLIO:</span>
+                            <strong id="ticketFolio"></strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span style="font-size:10px;">VENDEDOR:</span>
+                            <span id="ticketVendedor" style="font-size:11px;"></span>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span style="font-size:10px;">PAGO:</span>
+                            <span id="ticketMetodo" style="font-size:11px;"></span>
+                        </div>
+                    </div>
+                    <table style="width:100%; font-size:11px; margin-bottom:8px;">
+                        <thead>
+                            <tr style="border-bottom:1px dashed #999;">
+                                <th style="text-align:left; padding-bottom:4px;">Producto</th>
+                                <th style="text-align:center;">Cant</th>
+                                <th style="text-align:right;">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ticketItems"></tbody>
+                    </table>
+                    <div style="border-top:1px dashed #333; padding-top:6px;">
+                        <div class="d-flex justify-content-between">
+                            <span>SUBTOTAL</span><span id="ticketSubtotal"></span>
+                        </div>
+                        <div class="d-flex justify-content-between" style="font-size:16px; font-weight:900; margin-top:4px;">
+                            <span>TOTAL</span><span id="ticketTotal"></span>
+                        </div>
+                        <div id="rowEfectivo" class="d-flex justify-content-between mt-1" style="font-size:12px;">
+                            <span>EFECTIVO</span><span id="ticketEfectivo"></span>
+                        </div>
+                        <div id="rowCambio" class="d-flex justify-content-between" style="font-size:14px; font-weight:700; color:#16a34a;">
+                            <span>CAMBIO</span><span id="ticketCambio"></span>
+                        </div>
+                    </div>
+                    <div class="text-center mt-4" style="font-size:10px; color:#888;">
+                        ¡Gracias por su compra!<br>www.refweb.com
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer justify-content-between">
+                <button type="button" class="btn btn-success" onclick="imprimirTicket()">
+                    <i class="fas fa-print me-1"></i> Imprimir
+                </button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" onclick="location.reload()">
+                    <i class="fas fa-times me-1"></i> Cerrar
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .letter-spacing-1 { letter-spacing: 1px; }
+    .btn-check:not(:checked) + label .check-icon { opacity: 0; }
+    .btn-check:checked + label { background: var(--primary) !important; color: white !important; border-color: var(--primary) !important; }
+    .btn-check:checked + label .check-icon { opacity: 1; }
+</style>
+@Html.AntiForgeryToken()
+<!-- Modal Pago Stripe -->
+<div class="modal fade" id="modalStripe" data-bs-backdrop="static" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg">
+            <div class="modal-header bg-primary text-white border-0">
+                <h5 class="modal-title fw-bold"><i class="fas fa-credit-card me-2"></i>Pago con Tarjeta</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div id="stripe-payment-element">
+                    <!-- Stripe Element Inject -->
+                </div>
+                <div id="stripe-error-message" class="text-danger mt-3 small"></div>
+            </div>
+            <div class="modal-footer border-0 p-4 pt-0">
+                <button type="button" class="btn btn-light px-4" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" id="btnConfirmarPagoStripe" class="btn btn-primary px-4 fw-bold">
+                    <span id="stripe-button-text">Procesar Pago</span>
+                    <span id="stripe-spinner" class="spinner-border spinner-border-sm d-none"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+        </div>
+</div>
+
+<script>
+        $(document).ready(function() {
+            console.log("PDV Init: INICIANDO SCRIPT JQUERY");
+            
+            if (typeof $.ui === 'undefined') {
+                console.error("PDV Init Error: JQUERY UI NO SE CARGO CORRECTAMENTE.");
+            } else {
+                console.log("PDV Init: jQuery UI cargado correctamente.");
+            }
+
+            try {
+                const txtCodigo = $("#txtCodigoBarras");
+                const resultContainer = $("#contenedorResultados");
+                const listaResultados = $("#listaResultados");
+                const tabla = $("#tablaCarrito tbody");
+                let itemsCount = 0;
+
+                console.log("PDV Init: Selectores obtenidos", txtCodigo.length);
+
+                txtCodigo.focus();
+
+                // Búsqueda Manual expuesta globalmente
+                window.realizarBusqueda = function() {
+                    const btnBuscarDOM = $("#btnBuscar");
+                    let term = $("#txtCodigoBarras").val().trim();
+                    
+                    if (term.length === 0) {
+                        Swal.fire('Advertencia', 'Escribe algo en el buscador primero.', 'warning');
+                        $("#contenedorResultados").addClass('d-none');
+                        return;
+                    }
+                    
+                    btnBuscarDOM.prop('disabled', true).html('<i class="fas fa-spinner fa-spin me-1"></i> Buscando...');
+
+                    $.ajax({
+                        url: "/PDV/Ventas/BuscarProductos",
+                        type: "GET",
+                        dataType: "json",
+                        data: { term: term },
+                        success: function(data) {
+                            listaResultados.empty();
+                            if (data && data.length > 0) {
+                                data.forEach(item => {
+                                    // Separar nombre y código del label original si es posible
+                                    let nombreCorto = item.nombre;
+                                    let codigo = item.label.replace(item.nombre, '').replace(' - ', '').trim();
+                                    
+                                    listaResultados.append(`
+                                        <div class="list-group-item list-group-item-action d-flex justify-content-between align-items-center p-3 animate-fade-in">
+                                            <div>
+                                                <div class="fw-bold text-dark"><i class="fas fa-box text-primary me-2"></i>${nombreCorto}</div>
+                                                ${codigo ? `<div class="small text-muted mb-0"><i class="fas fa-barcode ms-4 me-1"></i>${codigo}</div>` : ''}
+                                            </div>
+                                            <div class="d-flex align-items-center">
+                                                <span class="badge bg-success bg-opacity-10 text-success rounded-pill px-3 py-2 fs-6 me-3 border border-success border-opacity-25">
+                                                    $${parseFloat(item.precio).toFixed(2)}
+                                                </span>
+                                                <button class="btn btn-primary rounded-circle shadow-sm btn-add-result" data-id="${item.id}" title="Agregar al carrito" style="width: 38px; height: 38px; display: flex; align-items: center; justify-content: center;">
+                                                    <i class="fas fa-plus"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `);
+                                });
+                                resultContainer.removeClass('d-none');
+                            } else {
+                                listaResultados.append(`
+                                    <div class="list-group-item p-4 text-center text-muted bg-light">
+                                        <i class="fas fa-search mb-2 fa-2x opacity-25"></i>
+                                        <div class="fw-bold">Sin resultados</div>
+                                        <div class="small">No encontramos productos para "${term}".</div>
+                                    </div>
+                                `);
+                                resultContainer.removeClass('d-none');
+                            }
+                        },
+                        error: function() {
+                            Swal.fire({ icon: 'error', title: 'Error', text: 'Mala conexión con el servidor.' });
+                        },
+                        complete: function() {
+                            $("#btnBuscar").prop('disabled', false).html('<i class="fas fa-search me-1"></i> Buscar');
+                        }
+                    });
+                }; // Fin de window.realizarBusqueda
+
+                $("#txtCodigoBarras").on("keypress", function(e) {
+                    if (e.which == 13) {
+                        e.preventDefault(); 
+                        window.realizarBusqueda();
+                    }
+                });
+
+                // Limpiar resultados si el usuario borra todo el texto
+                txtCodigo.on("input", function(e) {
+                    if ($(this).val().trim() === "") {
+                        resultContainer.addClass('d-none');
+                    }
+                });
+
+                // Delegación de eventos para los botones de Add en la lista dinámica
+                listaResultados.on('click', '.btn-add-result', function(e) {
+                    e.preventDefault();
+                    let selectedId = $(this).data("id");
+                    
+                    // Opcional: limpiar la caja de búsqueda o esconderla al agregar exitosamente
+                    // resultContainer.addClass('d-none');
+                    // txtCodigo.val("").focus();
+
+                    agregarProducto(selectedId);
+                });
+
+            function agregarProducto(productoId = null) {
+                const codigo = txtCodigo.val().trim();
+                const token = $('input[name="__RequestVerificationToken"]').val();
+                
+                if (!productoId && codigo === "") return;
+
+                // Ensure productoId is only an integer, avoid sending the jQuery MouseEvent object
+                const safeId = Number.isInteger(productoId) ? productoId : null;
+
+                $.post("/PDV/Ventas/AgregarProducto", { 
+                    codigoBarras: codigo,
+                    id: safeId,
+                    __RequestVerificationToken: token
+                }, function(response) {
+                    if (response.success) {
+                        actualizarVistaCarrito(response.item, response.total);
+                        txtCodigo.val("").focus();
+                    } else {
+                        Swal.fire({ icon: 'error', title: 'Error', text: response.message });
+                        txtCodigo.select();
+                    }
+                });
+            }
+
+            function actualizarVistaCarrito(item, total) {
+                $("#row-vacio").hide();
+                const filaExistente = $(`#fila-prod-${item.id}`);
+                
+                if (filaExistente.length > 0) {
+                    filaExistente.find(".cantidad-label").text(item.cantidad);
+                    filaExistente.find(".subtotal-col").text(`$${(item.precio * item.cantidad).toFixed(2)}`);
+                } else {
+                    const row = `
+                        <tr id="fila-prod-${item.id}" class="animate-fade-in">
+                            <td class="ps-4">
+                                <span class="fw-bold text-dark d-block">${item.nombre}</span>
+                                <span class="x-small text-muted">SKU: ${item.id}</span>
+                            </td>
+                            <td class="text-center fw-medium">$${item.precio.toFixed(2)}</td>
+                            <td class="text-center">
+                                <div class="badge bg-primary-soft px-3 py-2 fs-6 cantidad-label">${item.cantidad}</div>
+                            </td>
+                            <td class="text-end fw-bold text-primary subtotal-col">$${(item.precio * item.cantidad).toFixed(2)}</td>
+                            <td class="text-center pe-4">
+                                <button class="btn btn-sm btn-outline-danger border-0 p-2" onclick="eliminarProducto(${item.id})" title="Eliminar">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                    tabla.append(row);
+                    itemsCount++;
+                }
+
+                // Recalculate badge from table: sum every cantidad-label cell
+                let totalArticulos = 0;
+                tabla.find('tr[id^="fila-prod-"]').each(function() {
+                    totalArticulos += parseInt($(this).find('.cantidad-label').text()) || 0;
+                });
+                $("#badge-items").text(`${totalArticulos} Artículos`);
+                $("#lblSubtotal").text(`$${total.toFixed(2)}`);
+                $("#lblTotal").text(`$${total.toFixed(2)}`);
+            }
+
+            // ── Efectivo: mostrar/ocultar panel de cambio ──────────────────────
+            function totalNumerico() {
+                return parseFloat($("#lblTotal").text().replace('$','').replace(',','')) || 0;
+            }
+
+            function actualizarCambio() {
+                const recibido = parseFloat($("#inputEfectivoRecibido").val()) || 0;
+                const total    = totalNumerico();
+                const cambio   = recibido >= total ? recibido - total : 0;
+                $("#lblCambio").text("$" + cambio.toFixed(2));
+                $("#lblCambio").toggleClass("text-danger", recibido > 0 && recibido < total);
+                $("#lblCambio").toggleClass("text-success", recibido === 0 || recibido >= total);
+            }
+
+            function generarBotonesRapidos(total) {
+                const container = $("#botonesRapidos");
+                container.empty();
+                // Redondeos útiles: exacto, y +10, +20, +50, +100 sobre el total
+                const opciones = [total];
+                [10, 20, 50, 100, 200, 500].forEach(inc => {
+                    const val = Math.ceil(total / inc) * inc;
+                    if (!opciones.includes(val)) opciones.push(val);
+                });
+                opciones.slice(0, 5).forEach(v => {
+                    const btn = $(`<button type="button" class="btn btn-sm btn-outline-success fw-bold">$${v.toFixed(0)}</button>`);
+                    btn.on('click', () => { $("#inputEfectivoRecibido").val(v.toFixed(2)); actualizarCambio(); });
+                    container.append(btn);
+                });
+            }
+
+            $("input[name='metodoPago']").on('change', function() {
+                const esEfectivo = $(this).val() === 'Efectivo';
+                $("#panelEfectivo").toggle(esEfectivo);
+                if (esEfectivo) {
+                    generarBotonesRapidos(totalNumerico());
+                    actualizarCambio();
+                    $("#inputEfectivoRecibido").focus();
+                }
+            });
+
+            // Mostrar panel al cargar (Efectivo viene checked por defecto)
+            generarBotonesRapidos(0);
+
+            $("#inputEfectivoRecibido").on('input', actualizarCambio);
+
+            // Actualizar botones rápidos cuando el total cambia
+            const originalActualizarVista = actualizarVistaCarrito;
+
+            // ── Finalizar Venta ────────────────────────────────────────────────
+            $("#btnFinalizarVenta").on("click", function() {
+                const metodo   = $("input[name='metodoPago']:checked").val();
+                const notas    = $("#txtNotas").val();
+                const total    = totalNumerico();
+                const recibido = parseFloat($("#inputEfectivoRecibido").val()) || 0;
+
+                if (total === 0) {
+                    Swal.fire('Carrito vacío', 'Agrega productos antes de finalizar.', 'warning');
+                    return;
+                }
+
+                if (metodo === 'Efectivo' && recibido < total) {
+                    Swal.fire('Monto insuficiente',
+                        `El cliente debe pagar al menos $${total.toFixed(2)}. Ingresa el monto recibido.`,
+                        'warning');
+                    $("#inputEfectivoRecibido").focus();
+                    return;
+                }
+
+                const cambio = metodo === 'Efectivo' ? (recibido - total) : 0;
+
+                if (metodo === 'Tarjeta') {
+                    // Flujo Stripe
+                    const modalStripe = new bootstrap.Modal(document.getElementById('modalStripe'));
+                    modalStripe.show();
+                    
+                    const btnConfirm = $("#btnConfirmarPagoStripe");
+                    const spinner = $("#stripe-spinner");
+                    const btnText = $("#stripe-button-text");
+                    const errorMsg = $("#stripe-error-message");
+                    
+                    btnConfirm.prop("disabled", true);
+                    btnText.text("Cargando...");
+                    errorMsg.text("");
+                    $("#stripe-payment-element").html('<div class="text-center p-3"><div class="spinner-border text-primary"></div></div>');
+
+                    const token = $('input[name="__RequestVerificationToken"]').val();
+                    $.post("/PDV/Ventas/IniciarPagoPDV", { __RequestVerificationToken: token }, function(res) {
+                        if (res.success) {
+                            const stripe = Stripe(res.publishableKey);
+                            const elements = stripe.elements({ clientSecret: res.clientSecret });
+                            const paymentElement = elements.create("payment");
+                            $("#stripe-payment-element").empty();
+                            paymentElement.mount("#stripe-payment-element");
+                            
+                            btnConfirm.prop("disabled", false);
+                            btnText.text("Procesar Pago");
+
+                            btnConfirm.off("click").on("click", async function() {
+                                btnConfirm.prop("disabled", true);
+                                spinner.removeClass("d-none");
+                                btnText.text("Procesando...");
+                                
+                                const { error, paymentIntent } = await stripe.confirmPayment({
+                                    elements,
+                                    confirmParams: { return_url: window.location.href },
+                                    redirect: 'if_required'
+                                });
+
+                                if (error) {
+                                    errorMsg.text(error.message);
+                                    btnConfirm.prop("disabled", false);
+                                    spinner.addClass("d-none");
+                                    btnText.text("Procesar Pago");
+                                } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                                    modalStripe.hide();
+                                    ejecutarFinalizarVenta(metodo, notas, total, recibido, paymentIntent.id);
+                                }
+                            });
+                        } else {
+                            Swal.fire("Error", res.message, "error");
+                            modalStripe.hide();
+                        }
+                    });
+                } else {
+                    // Flujo Efectivo
+                    Swal.fire({
+                        title: '¿Confirmar venta?',
+                        html: `<div class="fs-5">Total: <strong>$${total.toFixed(2)}</strong></div>` +
+                              (metodo === 'Efectivo' ? `<div class="text-success fw-bold fs-4">Cambio: $${cambio.toFixed(2)}</div>` : ''),
+                        icon: 'question',
+                        showCancelButton: true,
+                        confirmButtonText: 'Sí, cobrar',
+                        cancelButtonText: 'Cancelar',
+                        customClass: { confirmButton: 'btn btn-primary px-4', cancelButton: 'btn btn-light px-4' },
+                        buttonsStyling: false
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            ejecutarFinalizarVenta(metodo, notas, total, recibido);
+                        }
+                    });
+                }
+            });
+
+            function ejecutarFinalizarVenta(metodo, notas, total, recibido, paymentIntentId = null) {
+                const token = $('input[name="__RequestVerificationToken"]').val();
+                const cambio = metodo === 'Efectivo' ? (recibido - total) : 0;
+
+                $.post("/PDV/Ventas/FinalizarVenta", {
+                    metodoPago: metodo,
+                    notas: notas,
+                    paymentIntentId: paymentIntentId,
+                    __RequestVerificationToken: token
+                }, function(response) {
+                    if (response.success) {
+                        // Llenar ticket
+                        const ahora = new Date();
+                        $("#ticketFecha").text(ahora.toLocaleDateString('es-MX', {weekday:'long',year:'numeric',month:'long',day:'numeric'}) + ' ' + ahora.toLocaleTimeString('es-MX'));
+                        $("#ticketFolio").text(response.folio);
+                        $("#ticketVendedor").text(response.vendedor || 'Vendedor');
+                        $("#ticketMetodo").text(metodo);
+                        $("#ticketSubtotal").text('$' + total.toFixed(2));
+                        $("#ticketTotal").text('$' + total.toFixed(2));
+
+                        // Items desde el DOM
+                        let itemsHtml = '';
+                        tabla.find('tr[id^="fila-prod-"]').each(function() {
+                            const nombre   = $(this).find('td:first .fw-bold').text();
+                            const cantidad = $(this).find('.cantidad-label').text();
+                            const subtotal = $(this).find('.subtotal-col').text();
+                            itemsHtml += `<tr><td>${nombre}</td><td style="text-align:center">${cantidad}</td><td style="text-align:right">${subtotal}</td></tr>`;
+                        });
+                        $("#ticketItems").html(itemsHtml);
+
+                        if (metodo === 'Efectivo') {
+                            $("#rowEfectivo").show();
+                            $("#rowCambio").show();
+                            $("#ticketEfectivo").text('$' + recibido.toFixed(2));
+                            $("#ticketCambio").text('$' + cambio.toFixed(2));
+                        } else {
+                            $("#rowEfectivo").hide();
+                            $("#rowCambio").hide();
+                        }
+
+                        // Mostrar modal del ticket
+                        new bootstrap.Modal(document.getElementById('modalTicket')).show();
+                        
+                        // Limpiar interfaz
+                        tabla.empty();
+                        $("#row-vacio").show();
+                        $("#badge-items").text("0 Artículos");
+                        $("#lblSubtotal").text("$0.00");
+                        $("#lblTotal").text("$0.00");
+                        $("#txtNotas").val("");
+                        $("#inputEfectivoRecibido").val("");
+                    } else {
+                        Swal.fire("Error", response.message, "error");
+                    }
+                });
+            }
+
+            // UX-03: Advertir si el vendedor intenta cerrar con items en el carrito
+            window.addEventListener('beforeunload', function(e) {
+                const hayItems = tabla.find('tr[id^="fila-prod-"]').length > 0;
+                if (hayItems) {
+                    e.preventDefault();
+                    e.returnValue = ''; // Requerido por Chrome para mostrar el diálogo
+                }
+            });
+
+            // Al finalizar venta correctamente, desactivar la advertencia antes de recargar
+            $("#btnFinalizarVenta").on('ventaFinalizada', function() {
+                window.removeEventListener('beforeunload', arguments.callee);
+            });
+
+            // F12 shortcut
+            $(document).on("keydown", function(e) {
+                if (e.key === "F12") {
+                    e.preventDefault();
+                    $("#btnFinalizarVenta").click();
+                }
+            });
+
+            // BUG-02 FIX: Eliminar producto del carrito en el servidor via AJAX
+            window.eliminarProducto = function(productoId) {
+                const token = $('input[name="__RequestVerificationToken"]').val();
+                $.post("/PDV/Ventas/EliminarProducto", {
+                    id: productoId,
+                    __RequestVerificationToken: token
+                }, function(response) {
+                    if (response.success) {
+                        const fila = $("#fila-prod-" + productoId);
+                        fila.fadeOut(300, function() { $(this).remove(); });
+
+                        $("#lblSubtotal").text("$" + response.total.toFixed(2));
+                        $("#lblTotal").text("$" + response.total.toFixed(2));
+                        $("#badge-items").text(response.itemsCount + " Artículos");
+                        // Refrescar botones rápidos con el nuevo total
+                        generarBotonesRapidos(response.total);
+                        actualizarCambio();
+
+                        if ($("tbody tr[id^='fila-prod-']").length === 0) {
+                            $("#row-vacio").show();
+                        }
+                    } else {
+                        Swal.fire('Error', response.message || 'No se pudo eliminar el producto.', 'error');
+                    }
+                }).fail(function() {
+                    Swal.fire('Error', 'Error de comunicación con el servidor.', 'error');
+                });
+            };
+            } catch (err) {
+                console.error("PDV Init Error Capturado:", err);
+                Swal.fire({ icon: 'error', title: 'Error de Inicialización', text: 'El buscador encontró un error: ' + err.message });
+            }
+        });
+
+        // Función global para imprimir el ticket
+        function imprimirTicket(ventaId) {
+            const contenido = document.getElementById('ticketImprimible').innerHTML;
+            const ventana = window.open('', '_blank', 'width=380,height=600');
+            ventana.document.write(`
+                <!DOCTYPE html>
+                <html><head>
+                    <meta charset="utf-8">
+                    <title>Ticket de Venta</title>
+                    <style>
+                        body { font-family: 'Courier New', monospace; font-size: 13px; margin: 0; padding: 16px; width: 320px; }
+                        .d-flex { display: flex; }
+                        .justify-content-between { justify-content: space-between; }
+                        table { width: 100%; border-collapse: collapse; }
+                        th, td { padding: 2px 0; }
+                        @@media print { @@page { margin: 0; size: 80mm auto; } }
+                    </style>
+                </head>
+                <body onload="window.print(); window.close();">
+                    ${contenido}
+                </body></html>`);
+            ventana.document.close();
+        }
+    </script>
+

@@ -1,0 +1,86 @@
+@model IEnumerable<RefWeb.Models.Venta>
+@{
+    ViewData["Title"] = "Ventas Diarias";
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-5">
+        <div>
+            <h1 class="display-5 fw-bold text-dark mb-1">Ventas de Hoy</h1>
+            <p class="text-muted mb-0">Resumen operativo y financiero del día @DateTime.Today.ToString("dd MMMM, yyyy").</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button onclick="window.print()" class="btn btn-outline-secondary shadow-sm">
+                <i class="fas fa-print me-2"></i> Imprimir
+            </button>
+            <a asp-action="DescargarExcel" asp-route-periodo="hoy" class="btn btn-outline-success shadow-sm">
+                <i class="fas fa-file-excel me-2"></i> Excel
+            </a>
+            <a asp-action="DescargarPDF" asp-route-periodo="hoy" class="btn btn-outline-danger shadow-sm">
+                <i class="fas fa-file-pdf me-2"></i> PDF
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <div class="col-md-6 col-xl-3">
+            <div class="glass-card p-4 border-0" style="background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white;">
+                <div class="small fw-bold text-white-50 text-uppercase mb-2">Ingresos Totales</div>
+                <h2 class="fw-800 mb-0">@ViewBag.TotalHoy.ToString("C")</h2>
+                <div class="mt-3 fs-3 opacity-25 text-end">
+                    <i class="fas fa-dollar-sign"></i>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-xl-3">
+            <div class="glass-card p-4">
+                <div class="small fw-bold text-muted text-uppercase mb-2">Pedidos Realizados</div>
+                <h2 class="fw-800 mb-0">@ViewBag.ContadorHoy</h2>
+                <div class="mt-3 fs-3 text-primary-soft text-end">
+                    <i class="fas fa-shopping-cart"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="glass-card overflow-hidden">
+        <div class="bg-light p-3 border-bottom d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 fw-bold">Desglose de Operaciones</h6>
+            <span class="badge bg-primary-soft">@Model.Count() Transacciones</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Folio Venta</th>
+                        <th>Hora</th>
+                        <th>Método de Pago</th>
+                        <th class="text-end pe-4">Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var v in Model)
+                    {
+                        <tr>
+                            <td class="ps-4">
+                                <span class="fw-bold text-dark">@v.Folio</span>
+                            </td>
+                            <td>
+                                <span class="text-muted small">@v.Fecha.ToString("HH:mm") hrs</span>
+                            </td>
+                            <td>
+                                <span class="badge bg-light text-dark border px-3">
+                                    <i class="fas @(v.MetodoPago == "Efectivo" ? "fa-money-bill-wave" : "fa-credit-card") me-2 text-primary"></i>
+                                    @v.MetodoPago
+                                </span>
+                            </td>
+                            <td class="text-end pe-4">
+                                <span class="fw-800 text-primary">@v.Total.ToString("C")</span>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

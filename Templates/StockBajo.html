@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            border: 1px solid #ef4444;
+            border-radius: 8px;
+        }
+
+        .header {
+            background: #ef4444;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            border-radius: 8px 8px 0 0;
+        }
+
+        .content {
+            padding: 20px;
+        }
+
+        .alert-box {
+            background: #fef2f2;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 12px;
+            color: #64748b;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚠️ ALERTA: Stock Bajo</h1>
+        </div>
+        <div class="content">
+            <h2>Atención Administrador,</h2>
+            <p>Se ha detectado que un producto ha alcanzado o superado su nivel mínimo de stock.</p>
+
+            <div class="alert-box">
+                <strong>Producto:</strong> {Producto}<br>
+                <strong>SKU:</strong> {SKU}<br>
+                <strong>Stock Actual:</strong> <span style="color: #ef4444; font-weight: bold;">{StockActual}</span><br>
+                <strong>Mínimo requerido:</strong> {StockMinimo}
+            </div>
+
+            <p>Se recomienda generar una orden de compra a proveedor a la brevedad para evitar quiebres de inventario.
+            </p>
+            <div style="text-align: center; margin-top: 20px;">
+                <a href="{UrlAdmin}"
+                    style="background: #333; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px;">Ir
+                    al Inventario</a>
+            </div>
+        </div>
+        <div class="footer">
+            &copy; {Year} RefWeb System Monitoring
+        </div>
+    </div>
+</body>
+
+</html>

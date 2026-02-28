@@ -1,0 +1,122 @@
+@model RefWeb.Models.Producto
+
+@{
+    ViewData["Title"] = "Nuevo Producto";
+}
+
+@section Breadcrumbs {
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb breadcrumb-modern">
+            <li class="breadcrumb-item"><a asp-area="Tienda" asp-controller="Tienda" asp-action="Index">Tienda</a></li>
+            <li class="breadcrumb-item"><a asp-action="Index">Productos</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Nuevo</li>
+        </ol>
+    </nav>
+}
+
+<div class="mb-4">
+    <h1 class="h3 fw-bold text-dark">@ViewData["Title"]</h1>
+    <p class="text-muted small">Completa la información para dar de alta un nuevo artículo.</p>
+</div>
+
+<form asp-action="Create" enctype="multipart/form-data">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4"></div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <div class="card card-modern mb-4 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Información General</h5>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="row g-3">
+                        <div class="col-md-12">
+                            <label asp-for="Nombre" class="form-label fw-600">Nombre del Producto</label>
+                            <input asp-for="Nombre" class="form-control form-control-modern" placeholder="Ej. Filtro de Aceite sintético" />
+                            <span asp-validation-for="Nombre" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CodigoSKU" class="form-label fw-600">SKU</label>
+                            <input asp-for="CodigoSKU" class="form-control form-control-modern" placeholder="REF-001" />
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CodigoBarras" class="form-label fw-600">Código Barras</label>
+                            <input asp-for="CodigoBarras" class="form-control form-control-modern" placeholder="750123456789" />
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Descripcion" class="form-label fw-600">Descripción</label>
+                            <textarea asp-for="Descripcion" class="form-control form-control-modern" rows="3"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="CategoriaId" class="form-label fw-600">Categoría</label>
+                            <select asp-for="CategoriaId" class="form-select form-select-modern" asp-items="ViewBag.CategoriaId">
+                                <option value="">-- Seleccionar --</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-600 d-block mb-3">Estado</label>
+                            <div class="form-check form-switch custom-switch">
+                                <input class="form-check-input" type="checkbox" asp-for="Activo" checked>
+                                <label class="form-check-label" asp-for="Activo">Producto Activo</label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="card card-modern border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Precios e Inventario</h5>
+                </div>
+                <div class="card-body px-4 pb-4">
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label asp-for="Precio" class="form-label fw-600">Precio Venta</label>
+                            <div class="input-group">
+                                <span class="input-group-text bg-light">$</span>
+                                <input asp-for="Precio" class="form-control form-control-modern" placeholder="0.00" />
+                            </div>
+                            <span asp-validation-for="Precio" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Stock" class="form-label fw-600">Stock Inicial</label>
+                            <input asp-for="Stock" class="form-control form-control-modern" type="number" value="0" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="StockMinimo" class="form-label fw-600">Mínimo (Alerta)</label>
+                            <input asp-for="StockMinimo" class="form-control form-control-modern" type="number" value="5" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="card card-modern mb-4 border-0 shadow-sm">
+                <div class="card-header bg-transparent border-0 pt-4 px-4">
+                    <h5 class="fw-bold mb-0">Imagen</h5>
+                </div>
+                <div class="card-body p-4 text-center">
+                    <div class="border-dashed rounded-3 p-4 bg-light mb-3">
+                        <i class="fas fa-cloud-upload-alt fs-2 text-primary mb-2 opacity-50"></i>
+                        <input type="file" name="imagen" class="form-control form-control-sm" accept="image/*" />
+                        <p class="text-muted x-small mt-2 mb-0">Recomendado: 800x800px</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="d-grid gap-2">
+                <button type="submit" class="btn btn-primary-modern py-3 shadow-sm">
+                    <i class="fas fa-save me-2"></i>Guardar Producto
+                </button>
+                <a asp-action="Index" class="btn btn-link link-secondary text-decoration-none small">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </a>
+            </div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

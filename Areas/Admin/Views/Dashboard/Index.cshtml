@@ -1,0 +1,285 @@
+@{
+    ViewData["Title"] = "Dashboard";
+    var graficaLabels    = ViewBag.GraficaLabels    as string ?? "[]";
+    var graficaTotales   = ViewBag.GraficaTotales   as string ?? "[]";
+    var graficaConteos   = ViewBag.GraficaConteos   as string ?? "[]";
+    var graficaCatLabels = ViewBag.GraficaCatLabels  as string ?? "[]";
+    var graficaCatTotales= ViewBag.GraficaCatTotales as string ?? "[]";
+    var stockBajo        = ViewBag.ProductosStockBajo as List<RefWeb.Models.Producto> ?? new();
+    var topProductos     = ViewBag.TopProductos;
+}
+
+<style>
+    .kpi-card { border-radius: 20px; padding: 1.5rem; color: white; position: relative; overflow: hidden; min-height: 120px; }
+    .kpi-card .kpi-icon { position: absolute; right: 1rem; top: 50%; transform: translateY(-50%); font-size: 4rem; opacity: 0.15; }
+    .kpi-card .kpi-value { font-size: 2rem; font-weight: 800; line-height: 1; }
+    .kpi-card .kpi-label { font-size: 0.78rem; text-transform: uppercase; letter-spacing: .06em; opacity: .85; margin-top: .35rem; }
+    .kpi-card .kpi-sub { font-size: 0.82rem; opacity: .8; margin-top: .4rem; }
+    .chart-card { background: white; border-radius: 20px; padding: 1.5rem; box-shadow: 0 4px 24px rgba(0,0,0,.06); }
+    .stock-badge-critical { background: #fef2f2; color: #dc2626; border-radius: 8px; padding: .2rem .6rem; font-weight: 700; font-size: .8rem; }
+    .stock-badge-warning  { background: #fffbeb; color: #d97706; border-radius: 8px; padding: .2rem .6rem; font-weight: 700; font-size: .8rem; }
+</style>
+
+<div class="animate-fade-in">
+
+    <div class="d-flex align-items-center justify-content-between mb-5">
+        <div class="d-flex align-items-center">
+            <div class="icon-box icon-box-primary me-4">
+                <i class="fas fa-chart-line fa-lg"></i>
+            </div>
+            <div>
+                <h1 class="display-6 fw-bold text-dark mb-0">Dashboard</h1>
+                <p class="text-muted mb-0">Vista general del negocio — @DateTime.Now.ToString("dddd, dd 'de' MMMM yyyy")</p>
+            </div>
+        </div>
+        <a asp-area="Admin" asp-controller="Reportes" asp-action="VentasDiarias" class="btn btn-outline-primary rounded-pill px-4">
+            <i class="fas fa-file-alt me-2"></i>Reportes detallados
+        </a>
+    </div>
+
+    @* ── KPI Cards ─────────────────────────────────────────────────── *@
+    <div class="row g-3 mb-4">
+        <div class="col-6 col-xl-3">
+            <div class="kpi-card" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">
+                <i class="fas fa-cash-register kpi-icon"></i>
+                <div class="kpi-value">$@(((decimal)ViewBag.VentasHoyTotal).ToString("N0"))</div>
+                <div class="kpi-label">Ventas hoy</div>
+                <div class="kpi-sub"><i class="fas fa-receipt me-1"></i>@ViewBag.VentasHoyCount tickets</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="kpi-card" style="background: linear-gradient(135deg, #10b981, #059669);">
+                <i class="fas fa-calendar-alt kpi-icon"></i>
+                <div class="kpi-value">$@(((decimal)ViewBag.VentasMesTotal).ToString("N0"))</div>
+                <div class="kpi-label">Ventas este mes</div>
+                <div class="kpi-sub"><i class="fas fa-receipt me-1"></i>@ViewBag.VentasMesCount tickets</div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="kpi-card" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <i class="fas fa-boxes kpi-icon"></i>
+                <div class="kpi-value">@ViewBag.ProductosActivos</div>
+                <div class="kpi-label">Productos activos</div>
+                <div class="kpi-sub">
+                    @if ((int)ViewBag.StockBajoCount > 0)
+                    {
+                        <span class="text-white"><i class="fas fa-exclamation-triangle me-1"></i>@ViewBag.StockBajoCount con stock bajo</span>
+                    }
+                    else
+                    {
+                        <span><i class="fas fa-check me-1"></i>Stock en orden</span>
+                    }
+                </div>
+            </div>
+        </div>
+        <div class="col-6 col-xl-3">
+            <div class="kpi-card" style="background: linear-gradient(135deg, #06b6d4, #0284c7);">
+                <i class="fas fa-truck kpi-icon"></i>
+                <div class="kpi-value">@ViewBag.PedidosPendientes</div>
+                <div class="kpi-label">Pedidos pendientes</div>
+                <div class="kpi-sub"><i class="fas fa-users me-1"></i>@ViewBag.TotalUsuarios usuarios registrados</div>
+            </div>
+        </div>
+    </div>
+
+    @* ── Gráficas ──────────────────────────────────────────────────── *@
+    <div class="row g-4 mb-4">
+        <div class="col-lg-8">
+            <div class="chart-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Ventas últimos 7 días</h5>
+                    <span class="badge bg-light text-muted rounded-pill px-3">Monto total $MXN</span>
+                </div>
+                <canvas id="chartVentas" height="100"></canvas>
+            </div>
+        </div>
+        <div class="col-lg-4">
+            <div class="chart-card h-100">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="fw-bold mb-0">Ventas por categoría</h5>
+                    <span class="badge bg-light text-muted rounded-pill px-3">Mes actual</span>
+                </div>
+                <canvas id="chartCategorias" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    @* ── Tablas inferiores ─────────────────────────────────────────── *@
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <h5 class="fw-bold mb-3"><i class="fas fa-exclamation-triangle text-warning me-2"></i>Alertas de Stock Bajo</h5>
+                @if (stockBajo.Count == 0)
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-check-circle fa-2x text-success mb-2 d-block"></i>
+                        Todos los productos tienen stock suficiente
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="text-muted small">
+                                <tr>
+                                    <th>Producto</th>
+                                    <th class="text-center">Stock</th>
+                                    <th class="text-center">Mínimo</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var p in stockBajo)
+                                {
+                                    <tr>
+                                        <td>
+                                            <div class="fw-bold small">@p.Nombre</div>
+                                            <div class="text-muted" style="font-size:.73rem">@p.Categoria?.Nombre</div>
+                                        </td>
+                                        <td class="text-center">
+                                            @if (p.Stock == 0)
+                                            {
+                                                <span class="stock-badge-critical">SIN STOCK</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="stock-badge-warning">@p.Stock</span>
+                                            }
+                                        </td>
+                                        <td class="text-center text-muted small">@p.StockMinimo</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="mt-3">
+                        <a asp-area="Admin" asp-controller="Inventario" asp-action="Create" class="btn btn-sm btn-warning rounded-pill px-3">
+                            <i class="fas fa-plus me-1"></i>Registrar entrada
+                        </a>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <h5 class="fw-bold mb-3"><i class="fas fa-trophy text-warning me-2"></i>Top Productos del Mes</h5>
+                @if (topProductos == null || ((IEnumerable<dynamic>)topProductos).Count() == 0)
+                {
+                    <div class="text-center py-4 text-muted">
+                        <i class="fas fa-chart-bar fa-2x mb-2 d-block opacity-30"></i>
+                        Sin ventas registradas este mes
+                    </div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm align-middle mb-0">
+                            <thead class="text-muted small">
+                                <tr>
+                                    <th>#</th>
+                                    <th>Producto</th>
+                                    <th class="text-center">Unidades</th>
+                                    <th class="text-end">Total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @{ int rank = 1; }
+                                @foreach (var p in (IEnumerable<dynamic>)topProductos)
+                                {
+                                    <tr>
+                                        <td>
+                                            @if (rank == 1) { <span class="text-warning fw-bold">🥇</span> }
+                                            else if (rank == 2) { <span class="text-muted fw-bold">🥈</span> }
+                                            else if (rank == 3) { <span style="color:#cd7f32" class="fw-bold">🥉</span> }
+                                            else { <span class="text-muted small">@rank</span> }
+                                        </td>
+                                        <td class="fw-bold small">@p.Nombre</td>
+                                        <td class="text-center">
+                                            <span class="badge bg-light text-secondary border rounded-pill">@p.Cantidad</span>
+                                        </td>
+                                        <td class="text-end fw-bold small">$@(((decimal)p.Total).ToString("N2"))</td>
+                                    </tr>
+                                    rank++;
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+    const labelsVentas  = @Html.Raw(graficaLabels);
+    const totalesVentas = @Html.Raw(graficaTotales);
+    const conteosVentas = @Html.Raw(graficaConteos);
+    const labelsCat     = @Html.Raw(graficaCatLabels);
+    const totalesCat    = @Html.Raw(graficaCatTotales);
+
+    // ─── Gráfica línea: ventas 7 días ─────────────────────────────────
+    new Chart(document.getElementById('chartVentas'), {
+        type: 'bar',
+        data: {
+            labels: labelsVentas,
+            datasets: [{
+                label: 'Total ($)',
+                data: totalesVentas,
+                backgroundColor: 'rgba(99, 102, 241, 0.15)',
+                borderColor: 'rgba(99, 102, 241, 0.9)',
+                borderWidth: 2,
+                borderRadius: 8,
+                tension: 0.4,
+                fill: true,
+                type: 'bar'
+            }, {
+                label: 'Tickets',
+                data: conteosVentas,
+                type: 'line',
+                borderColor: 'rgba(16, 185, 129, 0.9)',
+                backgroundColor: 'rgba(16, 185, 129, 0.05)',
+                borderWidth: 2,
+                pointBackgroundColor: 'rgba(16, 185, 129, 0.9)',
+                pointRadius: 4,
+                tension: 0.4,
+                yAxisID: 'y2'
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: { intersect: false, mode: 'index' },
+            plugins: { legend: { position: 'bottom' } },
+            scales: {
+                y:  { beginAtZero: true, grid: { color: 'rgba(0,0,0,.04)' }, ticks: { callback: v => '$' + v.toLocaleString() } },
+                y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { stepSize: 1 } }
+            }
+        }
+    });
+
+    // ─── Gráfica donut: categorías ────────────────────────────────────
+    const coloresCat = ['#6366f1','#10b981','#f59e0b','#06b6d4','#ef4444','#8b5cf6'];
+    new Chart(document.getElementById('chartCategorias'), {
+        type: 'doughnut',
+        data: {
+            labels: labelsCat,
+            datasets: [{
+                data: totalesCat,
+                backgroundColor: coloresCat,
+                borderWidth: 2,
+                borderColor: '#fff',
+                hoverOffset: 8
+            }]
+        },
+        options: {
+            responsive: true,
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'bottom', labels: { padding: 12, usePointStyle: true } },
+                tooltip: { callbacks: { label: ctx => ' $' + ctx.parsed.toLocaleString('es-MX', {minimumFractionDigits:2}) } }
+            }
+        }
+    });
+</script>
+}

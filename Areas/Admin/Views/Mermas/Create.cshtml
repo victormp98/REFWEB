@@ -1,0 +1,65 @@
+@model RefWeb.Models.Merma
+
+@{
+    ViewData["Title"] = "Reportar Merma";
+}
+
+<div class="container mt-4">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h4 class="mb-0"><i class="fas fa-exclamation-triangle me-2"></i>Reportar Merma / Baja</h4>
+                </div>
+                <div class="card-body p-4">
+                    <form asp-action="Create">
+                        <div asp-validation-summary="ModelOnly" class="text-danger mb-3"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="ProductoId" class="form-label fw-bold">Producto</label>
+                            <select asp-for="ProductoId" class="form-select" asp-items="@(new SelectList(ViewBag.Productos, "Id", "Nombre"))">
+                                <option value="">-- Seleccionar Producto --</option>
+                            </select>
+                            <span asp-validation-for="ProductoId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label asp-for="Cantidad" class="form-label fw-bold"></label>
+                                <input asp-for="Cantidad" class="form-control" type="number" min="1" />
+                                <span asp-validation-for="Cantidad" class="text-danger small"></span>
+                            </div>
+                            <div class="col-md-6">
+                                <label asp-for="TipoMerma" class="form-label fw-bold">Tipo de Merma</label>
+                                <select asp-for="TipoMerma" class="form-select">
+                                    <option value="Caducidad">Caducidad</option>
+                                    <option value="Rotura">Rotura / Daño</option>
+                                    <option value="Robo">Robo / Extravío</option>
+                                    <option value="Error">Error de Inventario</option>
+                                </select>
+                                <span asp-validation-for="TipoMerma" class="text-danger small"></span>
+                            </div>
+                        </div>
+
+                        <div class="mb-4">
+                            <label asp-for="Motivo" class="form-label fw-bold"></label>
+                            <textarea asp-for="Motivo" class="form-control" rows="3" placeholder="Describa la razón de la baja..."></textarea>
+                            <span asp-validation-for="Motivo" class="text-danger small"></span>
+                        </div>
+
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-warning btn-lg fw-bold">
+                                <i class="fas fa-save me-1"></i>Registrar Baja
+                            </button>
+                            <a asp-action="Index" class="btn btn-link text-muted">Cancelar</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

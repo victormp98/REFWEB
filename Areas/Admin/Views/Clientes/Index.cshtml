@@ -1,0 +1,129 @@
+@{
+    ViewData["Title"] = "CRM Clientes - Top VIP";
+    var topClientes = ViewBag.TopClientes as IEnumerable<dynamic>;
+    var todos = ViewBag.TodosClientes as IEnumerable<dynamic>;
+}
+
+@section Breadcrumbs {
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+            <li class="breadcrumb-item active" aria-current="page">Clientes y CRM</li>
+        </ol>
+    </nav>
+}
+
+<div class="animate-fade-in d-print-block">
+    <div class="d-flex justify-content-between align-items-center mb-5 d-print-none">
+        <div>
+            <h1 class="display-5 fw-bold text-dark mb-1"><i class="fas fa-gem text-primary me-3"></i>CRM VIP</h1>
+            <p class="text-muted mb-0">Ranking de clientes que más aportan al negocio (Tienda Web + Sucursal).</p>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="#" class="btn btn-primary shadow-sm ms-2" onclick="window.print()">
+                <i class="fas fa-print me-2"></i> Exportar Reporte
+            </a>
+        </div>
+    </div>
+
+    <div class="d-none d-print-block text-center mb-4">
+        <h2>Reporte Top Clientes</h2>
+        <p>Generado el: @DateTime.Now.ToString("dd/MM/yyyy HH:mm")</p>
+    </div>
+
+    <div class="row mb-5">
+        <div class="col-12">
+            <div class="glass-card overflow-hidden border-0 shadow-sm rounded-4">
+                <div class="bg-primary text-white p-4 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 fw-bold"><i class="fas fa-crown me-2"></i>Top 10 Clientes VIP</h5>
+                    <span class="badge bg-white text-primary rounded-pill">@todos?.Count() Registrados</span>
+                </div>
+                <div class="table-responsive bg-white">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="bg-light text-muted">
+                            <tr>
+                                <th class="ps-4 py-3">Rango</th>
+                                <th class="py-3">Cliente</th>
+                                <th class="text-center py-3">Contacto</th>
+                                <th class="text-center py-3">Total Compras</th>
+                                <th class="text-end pe-4 py-3">LTV (Ingreso Total)</th>
+                                <th class="text-center d-print-none py-3">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (topClientes == null || !topClientes.Any())
+                            {
+                                <tr>
+                                    <td colspan="6" class="text-center py-5 text-muted">
+                                        <i class="fas fa-users-slash fa-3x opacity-50 mb-3 d-block"></i>
+                                        Aún no hay clientes registrados con ventas.
+                                    </td>
+                                </tr>
+                            }
+                            else
+                            {
+                                int rank = 1;
+                                decimal maxTotal = topClientes.Max(m => (decimal)m.TotalGlobal);
+                                
+                                @foreach (var c in topClientes)
+                                {
+                                    decimal ltv = c.TotalGlobal;
+                                    decimal widthPerc = maxTotal > 0 ? (ltv / maxTotal) * 100M : 0;
+                                    var isVip = rank <= 3;
+
+                                    <tr class="@(isVip ? "bg-warning-soft border-bottom border-warning" : "")">
+                                        <td class="ps-4">
+                                            @if (rank == 1) { <span class="fs-4 text-warning fw-bold">🥇</span> }
+                                            else if (rank == 2) { <span class="fs-5 text-secondary fw-bold">🥈</span> }
+                                            else if (rank == 3) { <span style="color:#cd7f32" class="fs-5 fw-bold">🥉</span> }
+                                            else { <span class="text-muted fw-bold ms-2">#@rank</span> }
+                                        </td>
+                                        <td>
+                                            <div class="fw-bold text-dark fs-5">@c.Cliente.Nombre</div>
+                                            <div class="small text-muted"><i class="fas fa-user-tag me-1"></i> ID: @c.Cliente.Id</div>
+                                        </td>
+                                        <td class="text-center">
+                                            @if(!string.IsNullOrEmpty(c.Cliente.Telefono)) {
+                                                <div class="small"><i class="fas fa-phone me-1"></i>@c.Cliente.Telefono</div>
+                                            }
+                                            <div class="small"><i class="fas fa-envelope me-1"></i>@(c.Cliente.Usuario?.Email ?? "No registrado")</div>
+                                        </td>
+                                        <td class="text-center">
+                                            <span class="badge border border-secondary text-dark fs-6 bg-light rounded-pill px-3 py-2">@c.TotalTickets Tickets</span>
+                                        </td>
+                                        <td class="text-end pe-4 w-25">
+                                            <div class="d-flex flex-column align-items-end">
+                                                <span class="fw-900 @(isVip ? "text-dark" : "text-success") fs-5">@ltv.ToString("C")</span>
+                                                <div class="progress mt-2 w-100 rounded-pill" style="height: 6px;">
+                                                    <div class="progress-bar @(isVip ? "bg-warning" : "bg-success")" role="progressbar" style="width: @widthPerc%"></div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="text-center d-print-none">
+                                            <a asp-action="Detalles" asp-route-id="@c.Cliente.Id" class="btn btn-sm btn-outline-primary rounded-circle" data-bs-toggle="tooltip" title="Ver Perfil Completo">
+                                                <i class="fas fa-id-card"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+                                    rank++;
+                                }
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .bg-warning-soft { background-color: rgba(255, 193, 7, 0.05) !important; }
+    .fw-900 { font-weight: 900; }
+    @@media print {
+        .d-print-none { display: none !important; }
+        .d-print-block { display: block !important; }
+        .glass-card { border: 1px solid #ddd !important; box-shadow: none !important; background: white !important; }
+        .progress { border: 1px solid #ddd !important; }
+        .progress-bar { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    }
+</style>

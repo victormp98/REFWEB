@@ -1,0 +1,192 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - RefWeb</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link rel="stylesheet" href="~/css/custom.css" asp-append-version="true" />
+    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/base/jquery-ui.css">
+    <!-- Core jQuery needs to load first for Partial Views and plugins like jQuery UI to attach correctly -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+</head>
+<body>
+    <header>
+        <nav class="navbar navbar-expand-lg navbar-light navbar-modern sticky-top">
+            <div class="container">
+                <a class="navbar-brand d-flex align-items-center" asp-area="" asp-controller="Home" asp-action="Index">
+                    <i class="fas fa-tools me-2 fs-3 text-primary"></i>
+                    <span class="fs-4">RefWeb</span>
+                </a>
+                <button class="navbar-toggler border-0 shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarContent">
+                    <ul class="navbar-nav me-auto mb-2 mb-lg-0 ms-lg-4">
+                        <li class="nav-item">
+                            <a class="nav-link @(ViewContext.RouteData.Values["area"]?.ToString() == "Tienda" ? "active" : "")" asp-area="Tienda" asp-controller="Tienda" asp-action="Index">
+                                <i class="fas fa-shopping-bag me-1 opacity-75"></i>Tienda
+                            </a>
+                        </li>
+                        @if (User.IsInRole("Admin") || User.IsInRole("Gerente") || User.IsInRole("Vendedor"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["area"]?.ToString() == "PDV" ? "active" : "")" asp-area="PDV" asp-controller="Ventas" asp-action="Index">
+                                    <i class="fas fa-cash-register me-1 opacity-75"></i>PDV
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a class="nav-link @(ViewContext.RouteData.Values["controller"]?.ToString() == "CorteCaja" ? "active" : "")" asp-area="PDV" asp-controller="CorteCaja" asp-action="Index">
+                                    <i class="fas fa-clipboard-check me-1 opacity-75"></i>Corte
+                                </a>
+                            </li>
+                        }
+                        @if (User.IsInRole("Admin") || User.IsInRole("Gerente"))
+                        {
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle" href="#" id="adminDropdown" role="button" data-bs-toggle="dropdown">
+                                    <i class="fas fa-user-shield me-1 opacity-75"></i>Admin
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-lg">
+                                    <li><a class="dropdown-item fw-bold" asp-area="Admin" asp-controller="Dashboard" asp-action="Index"><i class="fas fa-chart-line me-2 text-primary"></i>Dashboard</a></li>
+                                    <li><a class="dropdown-item fw-bold text-danger" asp-area="Admin" asp-controller="Ventas" asp-action="Auditoria"><i class="fas fa-shield-alt me-2"></i>Auditoría Cancelaciones</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Productos" asp-action="Index"><i class="fas fa-boxes me-2 text-secondary"></i>Productos</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Inventario" asp-action="Index"><i class="fas fa-warehouse me-2 text-secondary"></i>Inventario</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Categorias" asp-action="Index"><i class="fas fa-tags me-2 text-secondary"></i>Categorías</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Envios" asp-action="Index"><i class="fas fa-shipping-fast me-2 text-secondary"></i>Envíos</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Mermas" asp-action="Index"><i class="fas fa-exclamation-triangle me-2 text-secondary"></i>Mermas</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Usuarios" asp-action="Index"><i class="fas fa-users me-2 text-secondary"></i>Usuarios</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Clientes" asp-action="Index"><i class="fas fa-gem me-2 text-primary"></i>Clientes VIP (CRM)</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li><h6 class="dropdown-header">INFORMES</h6></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Reportes" asp-action="VentasDiarias"><i class="fas fa-chart-line me-2 text-secondary"></i>Ventas Diarias</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Reportes" asp-action="MermasTotales"><i class="fas fa-exclamation-triangle me-2 text-warning"></i>Finanzas Mermas</a></li>
+                                    <li><a class="dropdown-item" asp-area="Admin" asp-controller="Reportes" asp-action="RendimientoVendedores"><i class="fas fa-medal me-2 text-success"></i>Rendimiento Vendedores</a></li>
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item" asp-area="Admin" asp-controller="Configuracion" asp-action="Index"><i class="fas fa-cog me-2 text-secondary"></i>Configuración</a></li>
+                                    }
+                                </ul>
+                            </li>
+                        }
+                    </ul>
+                    <div class="d-flex align-items-center">
+                        @if (User.Identity != null && User.Identity.IsAuthenticated
+                             && !User.IsInRole("Admin") && !User.IsInRole("Gerente") && !User.IsInRole("Vendedor"))
+                        {
+                            <a href="/Tienda/Tienda/Carrito" class="nav-link position-relative me-3 text-dark">
+                                <i class="fas fa-shopping-cart fs-5 text-secondary"></i>
+                                <span id="cart-badge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary border border-2 border-white" style="font-size: 0.65rem;">
+                                    0
+                                </span>
+                            </a>
+                        }
+                        <partial name="_LoginPartial" />
+                    </div>
+                </div>
+            </div>
+        </nav>
+    </header>
+
+    <div class="container py-4">
+        @if (IsSectionDefined("Breadcrumbs"))
+        {
+            <div class="breadcrumb-container animate-fade-in">
+                @await RenderSectionAsync("Breadcrumbs")
+            </div>
+        }
+        <main role="main" class="pb-5">
+
+            @RenderBody()
+        </main>
+    </div>
+
+    <footer class="footer-modern">
+        <div class="container text-center">
+            <div class="row align-items-center">
+                <div class="col-md-4 text-md-start">
+                    <p class="mb-0 text-muted small">&copy; @DateTime.Now.Year - RefWeb v1.1</p>
+                </div>
+                <div class="col-md-4">
+                    <span class="text-primary fw-bold">RefWeb</span>
+                </div>
+                <div class="col-md-4 text-md-end">
+                    <a href="#" class="text-decoration-none text-muted me-3 small">Privacidad</a>
+                    <a href="#" class="text-decoration-none text-muted small">Contacto</a>
+                </div>
+            </div>
+        </div>
+    </footer>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @if (TempData["Success"] != null || TempData["Error"] != null || TempData["Info"] != null)
+    {
+        <script>
+            document.addEventListener("DOMContentLoaded", function () {
+                var toastMixin = Swal.mixin({
+                    toast: true,
+                    icon: 'success',
+                    title: 'General Title',
+                    animation: false,
+                    position: 'top-right',
+                    showConfirmButton: false,
+                    timer: 3000,
+                    timerProgressBar: true,
+                    didOpen: (toast) => {
+                      toast.addEventListener('mouseenter', Swal.stopTimer)
+                      toast.addEventListener('mouseleave', Swal.resumeTimer)
+                    }
+                });
+
+                @if (TempData["Success"] != null)
+                {
+                    <text>
+                    Swal.fire({
+                        icon: 'success',
+                        title: '¡Éxito!',
+                        text: '@Html.Raw(TempData["Success"]?.ToString()?.Replace("'", "\\'").Replace("\r", "").Replace("\n", "\\n"))',
+                        confirmButtonColor: '#10b981',
+                        confirmButtonText: 'Aceptar'
+                    });
+                    </text>
+                }
+                @if (TempData["Error"] != null)
+                {
+                    <text>
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error detectado',
+                        text: '@Html.Raw(TempData["Error"]?.ToString()?.Replace("'", "\\'").Replace("\r", "").Replace("\n", "\\n"))',
+                        confirmButtonColor: '#ef4444',
+                        confirmButtonText: 'Entendido'
+                    });
+                    </text>
+                }
+                @if (TempData["Info"] != null)
+                {
+                    <text>
+                    Swal.fire({
+                        icon: 'info',
+                        title: 'Información',
+                        text: '@Html.Raw(TempData["Info"]?.ToString()?.Replace("'", "\\'").Replace("\r", "").Replace("\n", "\\n"))',
+                        confirmButtonColor: '#3b82f6',
+                        confirmButtonText: 'Continuar'
+                    });
+                    </text>
+                }
+            });
+        </script>
+    }
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

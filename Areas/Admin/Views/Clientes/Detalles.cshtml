@@ -1,0 +1,201 @@
+@model RefWeb.Models.Cliente
+@{
+    ViewData["Title"] = "Perfil Cliente - " + Model.Nombre;
+}
+
+@section Breadcrumbs {
+    <nav aria-label="breadcrumb">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Dashboard" asp-action="Index">Dashboard</a></li>
+            <li class="breadcrumb-item"><a asp-area="Admin" asp-controller="Clientes" asp-action="Index">Clientes VIP</a></li>
+            <li class="breadcrumb-item active" aria-current="page">@Model.Nombre</li>
+        </ol>
+    </nav>
+}
+
+<div class="animate-fade-in">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <a asp-action="Index" class="text-decoration-none text-muted fw-bold">
+            <i class="fas fa-arrow-left me-2"></i>Volver al Listado
+        </a>
+    </div>
+
+    <div class="row g-4 mb-5">
+        <!-- Sidebar Perfil -->
+        <div class="col-lg-4">
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden mb-4">
+                <div class="bg-primary pt-5 pb-3 px-4 text-center position-relative">
+                    <div class="bg-white text-primary rounded-circle d-flex align-items-center justify-content-center shadow-lg mx-auto position-absolute start-50 translate-middle" style="width: 80px; height: 80px; font-size: 2.2rem; top: 0;">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="mt-4 text-white">
+                        <h4 class="fw-bold mb-1">@Model.Nombre</h4>
+                        <div class="opacity-75 small">ID: @Model.Id • Desde @DateTime.Now.Year</div>
+                    </div>
+                </div>
+                <div class="card-body p-4 bg-white">
+                    <div class="mb-3">
+                        <small class="text-muted d-block text-uppercase fw-bold mb-1">Contacto</small>
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-envelope text-secondary me-3"></i>
+                            <span class="fw-500">@(Model.Usuario?.Email ?? "No registrado")</span>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-phone text-secondary me-3"></i>
+                            <span class="fw-500">@(Model.Telefono ?? "N/A")</span>
+                        </div>
+                    </div>
+                    @if (Model.Direcciones != null && Model.Direcciones.Any())
+                    {
+                        <hr class="border-light my-4">
+                        <small class="text-muted d-block text-uppercase fw-bold mb-3">Libreta de Direcciones</small>
+                        @foreach (var dir in Model.Direcciones)
+                        {
+                            <div class="bg-light p-3 rounded-3 mb-2 border border-light">
+                                <div class="fw-bold text-dark d-flex align-items-center">
+                                    <i class="fas fa-@(dir.TipoDireccion == "Oficina" ? "building" : "home") me-2 text-primary"></i>@dir.TipoDireccion @(dir.EsPrincipal ? "(Predeterminada)" : "")
+                                </div>
+                                <div class="small text-muted mt-1">@dir.Calle, Col. @dir.Colonia. CP. @dir.CodigoPostal</div>
+                                <div class="small text-muted">@dir.Ciudad, @dir.Estado</div>
+                            </div>
+                        }
+                    }
+                </div>
+            </div>
+            
+            <!-- Resumen Financiero -->
+            @{
+                var ventasWeb = Model.Pedidos?.Where(p => p.EstadoPedido != "Cancelado").ToList() ?? new List<Pedido>();
+                var ventasPdv = Model.Ventas?.Where(v => v.Estado == "Completada" && v.TipoVenta == "Local").ToList() ?? new List<Venta>();
+                var totalLTV = ventasWeb.Sum(p => p.Total) + ventasPdv.Sum(v => v.Total);
+                var totalTickets = ventasWeb.Count + ventasPdv.Count;
+            }
+            <div class="card border-0 shadow-sm rounded-4 bg-primary text-white">
+                <div class="card-body p-4">
+                    <h6 class="fw-bold text-uppercase opacity-75 mb-3">Valor del Cliente (LTV)</h6>
+                    <h2 class="display-5 fw-900 mb-0">@totalLTV.ToString("C")</h2>
+                    <p class="mb-0 opacity-75">En un total de @totalTickets transacciones.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Historico de Compras -->
+        <div class="col-lg-8">
+            <div class="card border-0 shadow-sm rounded-4 h-100 bg-white">
+                <div class="card-header bg-transparent border-bottom p-4">
+                    <h5 class="fw-bold mb-0"><i class="fas fa-history text-primary me-2"></i>Historial Consolidado de Compras</h5>
+                </div>
+                <div class="card-body p-0">
+                    <ul class="nav nav-tabs nav-tabs-modern px-4 pt-3 border-bottom-0" id="historialTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold active" id="web-tab" data-bs-toggle="tab" data-bs-target="#web" type="button" role="tab" aria-selected="true">Tienda Web <span class="badge bg-light text-dark ms-2">@ventasWeb.Count</span></button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link fw-bold" id="pdv-tab" data-bs-toggle="tab" data-bs-target="#pdv" type="button" role="tab" aria-selected="false">Punto de Venta <span class="badge bg-light text-dark ms-2">@ventasPdv.Count</span></button>
+                        </li>
+                    </ul>
+                    
+                    <div class="tab-content" id="historialTabsContent">
+                        <!-- Pedidos WEB -->
+                        <div class="tab-pane fade show active p-4" id="web" role="tabpanel" aria-labelledby="web-tab">
+                            @if (!ventasWeb.Any())
+                            {
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fas fa-shopping-cart fa-3x opacity-25 mb-3 d-block"></i>
+                                    El cliente no tiene compras en línea.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="text-muted small text-uppercase">
+                                            <tr>
+                                                <th>Folio</th>
+                                                <th>Fecha</th>
+                                                <th class="text-center">Artículos</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var p in ventasWeb.OrderByDescending(x => x.FechaPedido))
+                                            {
+                                                <tr>
+                                                    <td class="fw-bold text-dark">
+                                                        <a asp-controller="Envios" asp-action="Index" class="text-decoration-none text-primary">@p.Folio</a>
+                                                    </td>
+                                                    <td>@p.FechaPedido.ToString("dd MMM yyyy")</td>
+                                                    <td class="text-center"><span class="badge bg-light text-dark border rounded-pill">@(p.Detalles?.Sum(d => d.Cantidad) ?? 0)</span></td>
+                                                    <td class="text-end fw-bold text-success">@p.Total.ToString("C")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="bg-light fw-bold">
+                                            <tr>
+                                                <td colspan="3" class="text-end">Total Acumulado Tienda:</td>
+                                                <td class="text-end text-success">@ventasWeb.Sum(x => x.Total).ToString("C")</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Pedidos PDV -->
+                        <div class="tab-pane fade p-4" id="pdv" role="tabpanel" aria-labelledby="pdv-tab">
+                            @if (!ventasPdv.Any())
+                            {
+                                <div class="text-center py-5 text-muted">
+                                    <i class="fas fa-store fa-3x opacity-25 mb-3 d-block"></i>
+                                    El cliente no tiene compras en sucursal.
+                                </div>
+                            }
+                            else
+                            {
+                                <div class="table-responsive">
+                                    <table class="table table-hover align-middle">
+                                        <thead class="text-muted small text-uppercase">
+                                            <tr>
+                                                <th>Ticket</th>
+                                                <th>Fecha</th>
+                                                <th class="text-center">Artículos</th>
+                                                <th class="text-end">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach (var v in ventasPdv.OrderByDescending(x => x.Fecha))
+                                            {
+                                                <tr>
+                                                    <td class="fw-bold text-dark">@v.Folio</td>
+                                                    <td>@v.Fecha.ToString("dd MMM yyyy HH:mm")</td>
+                                                    <td class="text-center"><span class="badge bg-light text-dark border rounded-pill">@(v.VentasDetalle?.Sum(d => d.Cantidad) ?? 0)</span></td>
+                                                    <td class="text-end fw-bold text-success">@v.Total.ToString("C")</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                        <tfoot class="bg-light fw-bold">
+                                            <tr>
+                                                <td colspan="3" class="text-end">Total Acumulado Sucursal:</td>
+                                                <td class="text-end text-success">@ventasPdv.Sum(x => x.Total).ToString("C")</td>
+                                            </tr>
+                                        </tfoot>
+                                    </table>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .fw-900 { font-weight: 900; }
+    .nav-tabs-modern { border-bottom: 2px solid #e9ecef; }
+    .nav-tabs-modern .nav-link { color: #6c757d; border: none; border-bottom: 3px solid transparent; padding: 1rem 1.5rem; transition: all 0.2s; }
+    .nav-tabs-modern .nav-link:hover { color: #0d6efd; border-color: rgba(13, 110, 253, 0.2); }
+    .nav-tabs-modern .nav-link.active { color: #0d6efd; border-color: #0d6efd; background: transparent; }
+</style>
