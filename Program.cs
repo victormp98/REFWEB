@@ -30,11 +30,11 @@ builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IEmailSender, EmailService>();
 
 // ── Servicio de Limpieza de Usuarios No Confirmados ───────────────
-builder.Services.AddHostedService<CleanupUnconfirmedUsersService>();
+// builder.Services.AddHostedService<CleanupUnconfirmedUsersService>();
 
 // ── Identity ──────────────────────────────────────────────────────
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
-    options.SignIn.RequireConfirmedAccount = true)
+    options.SignIn.RequireConfirmedAccount = false)
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders()
     .AddDefaultUI();
