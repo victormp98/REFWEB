@@ -115,12 +115,15 @@
                                             <span class="text-muted x-small d-block text-uppercase fw-bold letter-spacing-1 mb-1">Precio</span>
                                             <span class="product-price">$@item.Precio.ToString("N2")</span>
                                         </div>
-                                        <button class="btn btn-primary rounded-circle p-0" 
-                                                style="width: 45px; height: 45px;"
-                                                onclick="CartManager.add(@item.Id, '@item.Nombre', @item.Precio, '@item.ImagenUrl')"
-                                                title="Añadir al carrito">
-                                            <i class="fas fa-plus"></i>
-                                        </button>
+                                        @if (!(User.IsInRole("Admin") || User.IsInRole("Gerente")))
+                                        {
+                                            <button class="btn btn-primary rounded-circle p-0" 
+                                                    style="width: 45px; height: 45px;"
+                                                    onclick="CartManager.add(@item.Id, '@item.Nombre.Replace("'", "\\'")', @item.Precio, '@(item.ImagenUrl ?? "")')"
+                                                    title="Añadir al carrito">
+                                                <i class="fas fa-plus"></i>
+                                            </button>
+                                        }
                                     </div>
                                 </div>
                             </div>
