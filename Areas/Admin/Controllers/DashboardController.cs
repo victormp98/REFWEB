@@ -25,14 +25,20 @@ namespace RefWeb.Areas.Admin.Controllers
             var semana   = hoy.AddDays(-6);
             var mes      = new DateTime(hoy.Year, hoy.Month, 1);
 
-            // ── Ventas ─────────────────────────────────────────────────
-            var ventasHoy = await _context.Ventas
+            // 4.4 FIX: Agrupar en BD con SumAsync/CountAsync en vez de cargar todas las filas a memoria
+            var ventasHoyTotal = await _context.Ventas
                 .Where(v => v.Fecha >= hoy && v.Estado == "Completada")
-                .ToListAsync();
+                .SumAsync(v => (decimal?)v.Total) ?? 0;
 
-            var ventasMes = await _context.Ventas
+            var ventasHoyCount = await _context.Ventas
+                .CountAsync(v => v.Fecha >= hoy && v.Estado == "Completada");
+
+            var ventasMesTotal = await _context.Ventas
                 .Where(v => v.Fecha >= mes && v.Estado == "Completada")
-                .ToListAsync();
+                .SumAsync(v => (decimal?)v.Total) ?? 0;
+
+            var ventasMesCount = await _context.Ventas
+                .CountAsync(v => v.Fecha >= mes && v.Estado == "Completada");
 
             // ── Inventario ──────────────────────────────────────────────
             var productosActivos   = await _context.Productos.CountAsync(p => p.Activo);
@@ -92,10 +98,10 @@ namespace RefWeb.Areas.Admin.Controllers
                 .ToListAsync();
 
             // ── ViewBag ─────────────────────────────────────────────────
-            ViewBag.VentasHoyTotal    = ventasHoy.Sum(v => v.Total);
-            ViewBag.VentasHoyCount    = ventasHoy.Count;
-            ViewBag.VentasMesTotal    = ventasMes.Sum(v => v.Total);
-            ViewBag.VentasMesCount    = ventasMes.Count;
+            ViewBag.VentasHoyTotal    = ventasHoyTotal;
+            ViewBag.VentasHoyCount    = ventasHoyCount;
+            ViewBag.VentasMesTotal    = ventasMesTotal;
+            ViewBag.VentasMesCount    = ventasMesCount;
             ViewBag.ProductosActivos  = productosActivos;
             ViewBag.StockBajoCount    = productosStockBajo.Count;
             ViewBag.PedidosPendientes = pedidosPendientes;

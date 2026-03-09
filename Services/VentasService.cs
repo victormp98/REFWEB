@@ -12,13 +12,15 @@ namespace RefWeb.Services
         private readonly IEmailService _emailService;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly IConfiguration _configuration;
+        private readonly ILogger<VentasService>? _logger;
 
-        public VentasService(ApplicationDbContext context, IEmailService emailService, IHostEnvironment hostEnvironment, IConfiguration configuration)
+        public VentasService(ApplicationDbContext context, IEmailService emailService, IHostEnvironment hostEnvironment, IConfiguration configuration, ILogger<VentasService>? logger = null)
         {
             _context = context;
             _emailService = emailService;
             _hostEnvironment = hostEnvironment;
             _configuration = configuration;
+            _logger = logger;
         }
 
         public async Task<(bool Success, string Message, Venta? Venta)> ProcesarVentaAsync(Venta venta, string userId)
@@ -38,44 +40,58 @@ namespace RefWeb.Services
                     return (false, $"El método de pago '{venta.MetodoPago}' no es válido para una venta de tipo '{venta.TipoVenta}'.", null);
                 }
 
-                // 2. Validar Existencia y Stock
+                // 2. Validar existencia, luego descontar stock de forma atómica (SEC-03 / RowVersion fix)
+                // Se usa ExecuteUpdate con WHERE Stock >= cantidad para evitar race conditions.
+                // Si filas afectadas == 0, el stock cambió entre la lectura y la escritura.
                 foreach (var detalle in venta.VentasDetalle)
                 {
-                    var producto = await _context.Productos.FindAsync(detalle.ProductoId);
+                    // Leer estado actual para validar existencia y para el historial
+                    var producto = await _context.Productos
+                        .FirstOrDefaultAsync(p => p.Id == detalle.ProductoId);
+
                     if (producto == null)
-                    {
                         return (false, $"El producto con ID {detalle.ProductoId} no existe.", null);
-                    }
 
                     if (producto.Stock < detalle.Cantidad)
-                    {
-                        return (false, $"Stock insuficiente para el producto '{producto.Nombre}'. Disponible: {producto.Stock}, Solicitado: {detalle.Cantidad}.", null);
-                    }
+                        return (false, $"Stock insuficiente para '{producto.Nombre}'. Disponible: {producto.Stock}, Solicitado: {detalle.Cantidad}.", null);
 
-                    // Actualizar stock del producto
                     int stockAnterior = producto.Stock;
-                    producto.Stock -= detalle.Cantidad;
-                    producto.FechaUltimaVenta = DateTime.Now;
+                    int stockNuevo    = stockAnterior - detalle.Cantidad;
+
+                    // Actualización atómica: solo actualiza si el stock sigue siendo suficiente
+                    int rowsAffected = await _context.Productos
+                        .Where(p => p.Id == detalle.ProductoId && p.Stock >= detalle.Cantidad)
+                        .ExecuteUpdateAsync(s => s
+                            .SetProperty(p => p.Stock, stockNuevo)
+                            .SetProperty(p => p.FechaUltimaVenta, DateTime.Now));
+
+                    if (rowsAffected == 0)
+                    {
+                        // Otro proceso actualizó el stock entre nuestra lectura y escritura
+                        return (false, $"Error de concurrencia en '{producto.Nombre}': el stock cambió. Por favor intenta de nuevo.", null);
+                    }
 
                     // 3. Crear Movimiento de Inventario
                     var movimiento = new InventarioMovimiento
                     {
-                        ProductoId = producto.Id,
+                        ProductoId     = producto.Id,
                         TipoMovimiento = "Salida",
-                        Cantidad = detalle.Cantidad,
-                        StockAnterior = stockAnterior,
-                        StockNuevo = producto.Stock,
+                        Cantidad       = detalle.Cantidad,
+                        StockAnterior  = stockAnterior,
+                        StockNuevo     = stockNuevo,
                         TipoReferencia = "Venta",
-                        UsuarioId = userId,
-                        Fecha = DateTime.Now,
-                        Notas = $"Salida por venta folio {venta.Folio}",
-                        EsCorreccion = false
+                        UsuarioId      = userId,
+                        Fecha          = DateTime.Now,
+                        Notas          = $"Salida por venta folio {venta.Folio}",
+                        EsCorreccion   = false
                     };
                     _context.InventarioMovimientos.Add(movimiento);
 
                     // 4. Verificar Stock Bajo y Notificar
-                    if (producto.Stock <= producto.StockMinimo)
+                    if (stockNuevo <= producto.StockMinimo)
                     {
+                        // Actualizar el objeto en memoria para la notificación
+                        producto.Stock = stockNuevo;
                         _ = NotificarStockBajoAsync(producto);
                     }
                 }
@@ -84,7 +100,7 @@ namespace RefWeb.Services
                 venta.UsuarioId = userId;
                 venta.Fecha = DateTime.Now;
                 venta.Estado = "Completada";
-                venta.Folio = venta.Folio ?? $"V-{DateTime.Now:yyyyMMddHHmmss}";
+                venta.Folio = venta.Folio ?? $"V-{Guid.NewGuid():N}".Substring(0, 11); // Ej: V-a3f8c21b (único, sin colisión)
                 
                 _context.Ventas.Add(venta);
                 await _context.SaveChangesAsync();
@@ -102,10 +118,10 @@ namespace RefWeb.Services
             catch (Exception ex)
             {
                 if (ownsTransaction && transaction != null) await transaction.RollbackAsync();
-                string msg = ex.Message;
-                if (ex.InnerException != null) msg += " | " + ex.InnerException.Message;
-                Console.WriteLine("DEBUG VENTA: " + msg);
-                return (false, $"Error al procesar la venta: {msg}", null);
+                // No exponer detalles internos al cliente; loguear internamente
+                var innerMsg = ex.InnerException?.Message ?? string.Empty;
+                _logger?.LogError(ex, "Error al procesar venta. Inner: {Inner}", innerMsg);
+                return (false, "Error al procesar la venta. Por favor contacta al administrador.", null);
             }
         }
 

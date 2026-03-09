@@ -53,9 +53,11 @@ builder.Services.ConfigureApplicationCookie(options =>
 // ── Sesión ────────────────────────────────────────────────────────
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromHours(8);
-    options.Cookie.HttpOnly = true;
-    options.Cookie.IsEssential = true;
+    options.IdleTimeout         = TimeSpan.FromHours(2);             // reducido de 8h
+    options.Cookie.HttpOnly     = true;
+    options.Cookie.IsEssential  = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest; // Secure en HTTPS
+    options.Cookie.SameSite     = SameSiteMode.Strict;              // SEC-10 FIX
 });
 
 var app = builder.Build();
@@ -92,6 +94,25 @@ if (!app.Environment.IsProduction())
     app.UseHttpsRedirection();
 
 app.UseStaticFiles();
+
+// 4.3 FIX: Security Headers HTTP (SEC-11)
+app.Use(async (context, next) =>
+{
+    var headers = context.Response.Headers;
+    headers["X-Frame-Options"]           = "DENY";
+    headers["X-Content-Type-Options"]    = "nosniff";
+    headers["Referrer-Policy"]           = "strict-origin-when-cross-origin";
+    headers["Permissions-Policy"]        = "camera=(), microphone=(), geolocation=()";
+    headers["Content-Security-Policy"]   =
+        "default-src 'self'; " +
+        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com https://cdn.datatables.net; " +
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.datatables.net https://fonts.googleapis.com; " +
+        "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
+        "img-src 'self' data: https:; " +
+        "frame-src https://js.stripe.com https://hooks.stripe.com; " +
+        "connect-src 'self' https://api.stripe.com;";
+    await next();
+});
 
 app.UseRouting();
 

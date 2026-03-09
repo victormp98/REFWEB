@@ -179,9 +179,16 @@ namespace RefWeb.Areas.PDV.Controllers
         {
             var carrito = GetCarrito();
             if (!carrito.Any())
-            {
                 return Json(new { success = false, message = "El carrito está vacío." });
-            }
+
+            // 3.2 FIX: Verificar que haya un CorteCaja abierto antes de vender
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var corteActivo = await _context.CortesCaja
+                .Where(c => c.Estado == "Abierto" && c.UsuarioAperturaId == userId)
+                .FirstOrDefaultAsync();
+
+            if (corteActivo == null)
+                return Json(new { success = false, message = "⚠️ No tienes un turno de caja abierto. Ve a Corte de Caja y abre tu turno antes de vender." });
 
             // ── SEGURIDAD: Verificar con Stripe si el método de pago es Tarjeta ──────
             if (metodoPago == "Tarjeta")
@@ -208,23 +215,44 @@ namespace RefWeb.Areas.PDV.Controllers
             }
             // ─────────────────────────────────────────────────────────────────────────
 
+            // ── PRECIO FIX (SEC): Revalidar precios contra BD antes de procesar ────
+            // El carrito PDV se almacena en sesión; un vendedor malintencionado podría
+            // manipular los valores. Siempre usamos los precios reales de la BD.
+            {
+                var productIds = carrito.Select(i => i.ProductoId).Distinct().ToList();
+                var productosDb = await _context.Productos
+                    .Where(p => productIds.Contains(p.Id) && p.Activo)
+                    .ToListAsync();
+
+                foreach (var item in carrito)
+                {
+                    var prodDb = productosDb.FirstOrDefault(p => p.Id == item.ProductoId);
+                    if (prodDb == null)
+                        return Json(new { success = false, message = $"El producto con ID {item.ProductoId} ya no está disponible." });
+
+                    item.PrecioUnitario = prodDb.Precio; // sobrescribir con precio real
+                    item.Subtotal       = prodDb.Precio * item.Cantidad;
+                }
+            }
+            // ─────────────────────────────────────────────────────────────────────────
+
             foreach(var item in carrito)
             {
                 item.Producto = null; // Evitar error de entidad trackeada por EF
             }
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var venta = new Venta
             {
-                TipoVenta = "Mostrador",
-                MetodoPago = metodoPago,
-                Notas = notas,
+                TipoVenta    = "Mostrador",
+                MetodoPago   = metodoPago,
+                Notas        = notas,
                 VentasDetalle = carrito,
-                Subtotal = carrito.Sum(i => i.PrecioUnitario * i.Cantidad),
-                Impuestos = 0,
-                Total = carrito.Sum(i => i.PrecioUnitario * i.Cantidad),
-                UsuarioId = userId,
-                Estado = "Completada"
+                Subtotal     = carrito.Sum(i => i.PrecioUnitario * i.Cantidad),
+                Impuestos    = 0,
+                Total        = carrito.Sum(i => i.PrecioUnitario * i.Cantidad),
+                UsuarioId    = userId,
+                Estado       = "Completada",
+                CorteCajaId  = corteActivo.Id  // 3.2 FIX: vincular al corte activo
             };
 
             var (success, message, resultVenta) = await _ventasService.ProcesarVentaAsync(venta, userId);
@@ -274,6 +302,78 @@ namespace RefWeb.Areas.PDV.Controllers
             var pdf = await ticketService.GenerarTicketVentaAsync(venta);
 
             return File(pdf, "application/pdf", $"Ticket_{folio}.pdf");
+        }
+
+        // ── CANCELACIÓN DE VENTA (solo Admin/Gerente) ────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Admin,Gerente")]
+        public async Task<IActionResult> CancelarVenta(int ventaId, string motivoCancelacion)
+        {
+            if (string.IsNullOrWhiteSpace(motivoCancelacion))
+                return Json(new { success = false, message = "El motivo de cancelación es obligatorio." });
+
+            var venta = await _context.Ventas
+                .Include(v => v.VentasDetalle)
+                .FirstOrDefaultAsync(v => v.Id == ventaId);
+
+            if (venta == null)
+                return Json(new { success = false, message = "Venta no encontrada." });
+
+            if (venta.Estado == "Cancelada")
+                return Json(new { success = false, message = "Esta venta ya fue cancelada." });
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                // Revertir stock de cada producto (operación atómica igual que en ventas)
+                foreach (var detalle in venta.VentasDetalle)
+                {
+                    var producto = await _context.Productos
+                        .FirstOrDefaultAsync(p => p.Id == detalle.ProductoId);
+                    if (producto == null) continue;
+
+                    int stockAnterior = producto.Stock;
+                    int stockNuevo    = stockAnterior + detalle.Cantidad;
+
+                    await _context.Productos
+                        .Where(p => p.Id == detalle.ProductoId)
+                        .ExecuteUpdateAsync(s => s.SetProperty(p => p.Stock, stockNuevo));
+
+                    // Movimiento de inventario — Entrada por cancelación
+                    _context.InventarioMovimientos.Add(new InventarioMovimiento
+                    {
+                        ProductoId     = detalle.ProductoId,
+                        TipoMovimiento = "Entrada",
+                        Cantidad       = detalle.Cantidad,
+                        StockAnterior  = stockAnterior,
+                        StockNuevo     = stockNuevo,
+                        TipoReferencia = "CancelacionVenta",
+                        UsuarioId      = userId,
+                        Fecha          = DateTime.Now,
+                        Notas          = $"Restitución por cancelación de venta {venta.Folio}. Motivo: {motivoCancelacion}",
+                        EsCorreccion   = true
+                    });
+                }
+
+                // Marcar la venta como cancelada
+                venta.Estado             = "Cancelada";
+                venta.FechaCancelacion   = DateTime.Now;
+                venta.UsuarioCancelaId   = userId;
+                venta.MotivoCancelacion  = motivoCancelacion;
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return Json(new { success = true, message = $"Venta {venta.Folio} cancelada. Stock restituido correctamente." });
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                return Json(new { success = false, message = "Error al cancelar la venta: " + ex.Message });
+            }
         }
 
         private List<VentaDetalle> GetCarrito()

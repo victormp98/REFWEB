@@ -11,7 +11,8 @@ namespace RefWeb.Data
         {
             var roleManager = serviceProvider.GetRequiredService<RoleManager<IdentityRole>>();
             var userManager = serviceProvider.GetRequiredService<UserManager<IdentityUser>>();
-            var context = serviceProvider.GetRequiredService<ApplicationDbContext>();
+            var context     = serviceProvider.GetRequiredService<ApplicationDbContext>();
+            var config      = serviceProvider.GetRequiredService<IConfiguration>();
 
             // ── Roles ──────────────────────────────────────────────
             string[] roleNames = { "Admin", "Gerente", "Vendedor", "Cliente" };
@@ -19,11 +20,20 @@ namespace RefWeb.Data
                 if (!await roleManager.RoleExistsAsync(roleName))
                     await roleManager.CreateAsync(new IdentityRole(roleName));
 
+            // ── Contraseñas del seed ────────────────────────────────
+            // Se leen de variables de entorno/appsettings (Seed:AdminPassword, etc.).
+            // Si no están configuradas se genera un GUID aleatorio y se imprime en los
+            // logs de arranque (consola / Coolify). Cámbialo vía "Olvidé mi contraseña".
+            string adminPwd    = ResolvePassword(config, "Seed:AdminPassword",    "Admin");
+            string gerentePwd  = ResolvePassword(config, "Seed:GerentePassword",  "Gerente");
+            string vendedorPwd = ResolvePassword(config, "Seed:VendedorPassword", "Vendedor");
+            string clientePwd  = ResolvePassword(config, "Seed:ClientePassword",  "Cliente");
+
             // ── Usuarios de prueba ──────────────────────────────────
-            await SeedUser(serviceProvider, userManager, "admin@refweb.com",    "Admin123!",    "Admin");
-            await SeedUser(serviceProvider, userManager, "gerente@refweb.com",  "Gerente123!",  "Gerente");
-            await SeedUser(serviceProvider, userManager, "vendedor@refweb.com", "Vendedor123!", "Vendedor");
-            await SeedUser(serviceProvider, userManager, "cliente@refweb.com",  "Cliente123!",  "Cliente");
+            await SeedUser(serviceProvider, userManager, "admin@refweb.com",    adminPwd,    "Admin");
+            await SeedUser(serviceProvider, userManager, "gerente@refweb.com",  gerentePwd,  "Gerente");
+            await SeedUser(serviceProvider, userManager, "vendedor@refweb.com", vendedorPwd, "Vendedor");
+            await SeedUser(serviceProvider, userManager, "cliente@refweb.com",  clientePwd,  "Cliente");
 
             // ── Categorías ─────────────────────────────────────────
             if (!await context.Categorias.AnyAsync())
@@ -117,6 +127,22 @@ namespace RefWeb.Data
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// Lee la contraseña de configuración (variable de entorno o appsettings).
+        /// Si no está configurada genera un GUID seguro, lo imprime UNA VEZ en consola
+        /// y lo usa como contraseña. El admin usa "Olvidé mi contraseña" para cambiarla.
+        /// </summary>
+        private static string ResolvePassword(IConfiguration config, string key, string role)
+        {
+            var value = config[key];
+            if (!string.IsNullOrWhiteSpace(value)) return value;
+
+            // Sin configurar → generar contraseña aleatoria segura
+            var generated = $"Rw!{Guid.NewGuid():N}".Substring(0, 20);
+            Console.WriteLine($"[SEED] ⚠️  Contraseña auto-generada para rol '{role}': {generated}  (configura '{key}' para evitar esto)");
+            return generated;
         }
     }
 }

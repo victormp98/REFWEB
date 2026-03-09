@@ -159,7 +159,7 @@ namespace RefWeb.Areas.Tienda.Controllers
 
         [HttpPost]
         [Authorize(Roles = "Cliente")]
-        [IgnoreAntiforgeryToken]
+        [ValidateAntiForgeryToken]  // SEC-05 FIX: eliminado [IgnoreAntiforgeryToken]
         public async Task<IActionResult> IniciarPago([FromBody] List<CartItemRequest>? items)
         {
             try
@@ -221,6 +221,11 @@ namespace RefWeb.Areas.Tienda.Controllers
                 var service = new PaymentIntentService();
                 var intent = await service.CreateAsync(options);
 
+                // SEC-04 FIX: Guardar el PI id y el total esperado en sesión
+                // para verificar en ConfirmarPedido que no hubo manipulación.
+                HttpContext.Session.SetString("PendingPI_Id",    intent.Id);
+                HttpContext.Session.SetString("PendingPI_Total", totalDecimal.ToString("F2"));
+
                 return Json(new { clientSecret = intent.ClientSecret });
             }
             catch (StripeException ex)
@@ -238,23 +243,91 @@ namespace RefWeb.Areas.Tienda.Controllers
         public async Task<IActionResult> Webhook()
         {
             var json = await new StreamReader(HttpContext.Request.Body).ReadToEndAsync();
+            Event stripeEvent;
+
+            // 1. Verificar firma de Stripe para confirmar que el evento es legítimo
             try
             {
-                var stripeEvent = EventUtility.ConstructEvent(json,
-                    Request.Headers["Stripe-Signature"], _configuration["Stripe:WebhookSecret"]);
-
-                if (stripeEvent.Type == EventTypes.PaymentIntentSucceeded)
-                {
-                    var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
-                    // En un entorno real, aquí se usaría el PaymentIntent ID para buscar el pedido temporal y finalizarlo
-                }
-
-                return Ok();
+                stripeEvent = EventUtility.ConstructEvent(
+                    json,
+                    Request.Headers["Stripe-Signature"],
+                    _configuration["Stripe:WebhookSecret"],
+                    throwOnApiVersionMismatch: false);
             }
-            catch (Exception)
+            catch (StripeException ex)
             {
+                // Firma inválida → rechazar. Esto bloquea webhooks falsificados.
+                Console.WriteLine($"[WEBHOOK] Firma inválida: {ex.Message}");
+                return BadRequest(new { error = "Firma inválida" });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"[WEBHOOK] Error al parsear evento: {ex.Message}");
                 return BadRequest();
             }
+
+            // 2. Procesar el evento
+            if (stripeEvent.Type == EventTypes.PaymentIntentSucceeded)
+            {
+                var paymentIntent = stripeEvent.Data.Object as PaymentIntent;
+                if (paymentIntent == null) return Ok();
+
+                try
+                {
+                    await ManejarPagoExitoso(paymentIntent);
+                }
+                catch (Exception ex)
+                {
+                    // No retornar error a Stripe (evita reintentos infinitos en errores de BD)
+                    Console.WriteLine($"[WEBHOOK] Error procesando PI {paymentIntent.Id}: {ex.Message}");
+                }
+            }
+
+            // Siempre responder 200 para que Stripe no reintente indefinidamente
+            return Ok();
+        }
+
+        /// <summary>
+        /// Lógica de respaldo: si el cliente pagó en Stripe pero nunca llegó a ConfirmarPedido,
+        /// este método detecta el pago huérfano y lo registra para revisión manual.
+        /// Cuando se implemente el paso de metadata en IniciarPago, aquí se podrá crear
+        /// el pedido automáticamente con los datos del carrito guardados en PI.metadata.
+        /// </summary>
+        private async Task ManejarPagoExitoso(PaymentIntent pi)
+        {
+            // Verificar si ya existe una venta con el monto de este PI
+            // (significa que ConfirmarPedido ya lo procesó correctamente)
+            long montoCentavos = pi.Amount;
+            decimal montoDecimal = montoCentavos / 100m;
+
+            // Buscar venta reciente con el mismo monto (ventana de 24h para evitar falsos positivos)
+            var ventanaInicio = DateTime.UtcNow.AddHours(-24);
+            var ventaExistente = await _context.Ventas
+                .AnyAsync(v => v.Total == montoDecimal
+                            && v.TipoVenta == "Online"
+                            && v.Fecha >= ventanaInicio);
+
+            if (ventaExistente)
+            {
+                // El pedido ya fue procesado por ConfirmarPedido → todo correcto
+                Console.WriteLine($"[WEBHOOK] PI {pi.Id} ya tiene venta registrada. OK.");
+                return;
+            }
+
+            // ── PAGO HUÉRFANO: Stripe cobró pero ConfirmarPedido no se ejecutó ────────
+            // Esto ocurre si el cliente cerró el navegador después de pagar.
+            // Se registra en los logs para que el administrador lo revise manualmente
+            // y decida si crear el pedido, reembolsar, o contactar al cliente.
+            Console.WriteLine($"[WEBHOOK] ⚠️ PAGO HUÉRFANO DETECTADO:");
+            Console.WriteLine($"  PaymentIntent ID : {pi.Id}");
+            Console.WriteLine($"  Monto            : ${montoDecimal:F2} MXN");
+            Console.WriteLine($"  Cliente Stripe   : {pi.CustomerId ?? "anónimo"}");
+            Console.WriteLine($"  Fecha            : {pi.Created:yyyy-MM-dd HH:mm:ss} UTC");
+            Console.WriteLine($"  Acción requerida : Revisar en Stripe Dashboard y crear pedido manualmente.");
+
+            // TODO Fase 2B: Guardar el carrito en PI.Metadata en IniciarPago,
+            // y aquí reconstruir el pedido automáticamente desde esos datos.
+            // Por ahora la alerta en logs es suficiente para operaciones pequeñas.
         }
 
         [HttpPost]
@@ -262,10 +335,22 @@ namespace RefWeb.Areas.Tienda.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> ConfirmarPedido(Direccion? direccionEnvio, int? DireccionExistenteId, string? paymentIntentId)
         {
-            // ── SEGURIDAD: Verificar con Stripe que el pago realmente fue aprobado ─────
+            // ── SEGURIDAD: Verificar PI con sesión del servidor y con Stripe ──────────
             if (string.IsNullOrEmpty(paymentIntentId))
             {
                 TempData["Error"] = "No se recibió confirmación de pago. Por favor intenta de nuevo.";
+                return RedirectToAction(nameof(Carrito));
+            }
+
+            // SEC-04 FIX: Verificar que el PI enviado por el cliente es el mismo que
+            // se creó en IniciarPago (almacenado en sesión). Impide reutilizar un PI de
+            // otro monto o de otra sesión para pagar un pedido mayor.
+            var sessionPiId    = HttpContext.Session.GetString("PendingPI_Id");
+            var sessionPiTotal = HttpContext.Session.GetString("PendingPI_Total");
+
+            if (sessionPiId != paymentIntentId)
+            {
+                TempData["Error"] = "La sesión de pago no coincide. Por favor vuelve al carrito e intenta de nuevo.";
                 return RedirectToAction(nameof(Carrito));
             }
 
@@ -278,6 +363,19 @@ namespace RefWeb.Areas.Tienda.Controllers
                 {
                     TempData["Error"] = $"El pago no fue aprobado por el procesador de pagos (estado: {intent.Status}). Por favor intenta de nuevo.";
                     return RedirectToAction(nameof(Checkout));
+                }
+
+                // Verificar que el monto cobrado por Stripe coincide con el total del servidor
+                if (!string.IsNullOrEmpty(sessionPiTotal) &&
+                    decimal.TryParse(sessionPiTotal, System.Globalization.NumberStyles.Any,
+                        System.Globalization.CultureInfo.InvariantCulture, out var expectedTotal))
+                {
+                    long expectedCents = (long)(expectedTotal * 100);
+                    if (intent.Amount != expectedCents)
+                    {
+                        TempData["Error"] = "El monto del pago no corresponde al total del pedido. Operación cancelada por seguridad.";
+                        return RedirectToAction(nameof(Carrito));
+                    }
                 }
             }
             catch (Exception ex)
@@ -478,8 +576,10 @@ namespace RefWeb.Areas.Tienda.Controllers
                     Console.WriteLine("Error enviando correo de confirmación: " + ex.Message);
                 }
 
-                // 6. Limpiar Carrito
+                // 6. Limpiar Carrito y datos de sesión del pago
                 HttpContext.Session.Remove("CarritoTienda");
+                HttpContext.Session.Remove("PendingPI_Id");    // SEC-04: limpiar PI usado
+                HttpContext.Session.Remove("PendingPI_Total");
 
                 return RedirectToAction(nameof(Index), new { pago = "exito" });
             }

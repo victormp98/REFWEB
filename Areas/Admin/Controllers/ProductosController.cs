@@ -17,6 +17,7 @@ namespace RefWeb.Areas.Admin.Controllers
         private readonly IWebHostEnvironment _hostEnvironment;
         private readonly IEmailService _emailService;
         private readonly UserManager<IdentityUser> _userManager;
+        private readonly ILogger<ProductosController> _logger;
 
         private const string ImageFolder = "images/productos";
 
@@ -24,12 +25,14 @@ namespace RefWeb.Areas.Admin.Controllers
             ApplicationDbContext context,
             IWebHostEnvironment hostEnvironment,
             IEmailService emailService,
-            UserManager<IdentityUser> userManager)
+            UserManager<IdentityUser> userManager,
+            ILogger<ProductosController> logger)
         {
             _context = context;
             _hostEnvironment = hostEnvironment;
             _emailService = emailService;
             _userManager = userManager;
+            _logger = logger;
         }
 
         // GET: Admin/Productos
@@ -227,7 +230,7 @@ namespace RefWeb.Areas.Admin.Controllers
             catch (Exception ex)
             {
                 // No detener el flujo principal si falla el correo
-                Console.WriteLine($"[STOCK ALERT] Error: {ex.Message}");
+                _logger.LogWarning(ex, "[STOCK ALERT] Error enviando alerta de stock bajo para producto {ProductoId}", producto.Id);
             }
         }
 
@@ -237,6 +240,24 @@ namespace RefWeb.Areas.Admin.Controllers
             var ext = Path.GetExtension(imagen.FileName).ToLowerInvariant();
             if (!validExts.Contains(ext)) return (false, "Formato no permitido (usa JPG, PNG o WebP).");
             if (imagen.Length > 3 * 1024 * 1024) return (false, "La imagen es muy pesada (máx 3MB).");
+
+            // 4.2 FIX: Verificar magic bytes — el contenido real del archivo debe coincidir con la extensión
+            using var stream = imagen.OpenReadStream();
+            var header = new byte[4];
+            if (stream.Read(header, 0, 4) < 2)
+                return (false, "El archivo está vacío o es demasiado pequeño.");
+
+            bool validSignature = ext switch
+            {
+                ".jpg" or ".jpeg" => header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF,
+                ".png"            => header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47,
+                ".webp"           => header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46,
+                _                 => false
+            };
+
+            if (!validSignature)
+                return (false, "El archivo no es una imagen válida. No uses archivos renombrados.");
+
             return (true, null);
         }
 
