@@ -141,15 +141,15 @@ namespace RefWeb.Areas.Admin.Controllers
             {
                 try
                 {
-                    pDb.Nombre = producto.Nombre;
-                    pDb.CodigoSKU = producto.CodigoSKU;
+                    pDb.Nombre       = producto.Nombre;
+                    pDb.CodigoSKU    = producto.CodigoSKU;
                     pDb.CodigoBarras = producto.CodigoBarras;
-                    pDb.Descripcion = producto.Descripcion;
-                    pDb.CategoriaId = producto.CategoriaId;
-                    pDb.Precio = producto.Precio;
-                    pDb.Stock = producto.Stock;
-                    pDb.StockMinimo = producto.StockMinimo;
-                    pDb.Activo = producto.Activo;
+                    pDb.Descripcion  = producto.Descripcion;
+                    pDb.CategoriaId  = producto.CategoriaId;
+                    pDb.Precio       = producto.Precio;
+                    // Stock NO se actualiza aquí — solo vía Admin/Inventario/Create
+                    pDb.StockMinimo  = producto.StockMinimo;
+                    pDb.Activo       = producto.Activo;
                     pDb.FechaModificacion = DateTime.Now;
 
                     if (imagen != null && imagen.Length > 0)
