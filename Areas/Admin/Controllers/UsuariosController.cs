@@ -114,5 +114,32 @@ namespace RefWeb.Areas.Admin.Controllers
 
             return RedirectToAction(nameof(Index));
         }
+
+        // POST: Admin/Usuarios/ConfirmarEmail
+        // Permite al Admin confirmar manualmente el correo de un usuario
+        // (útil cuando el email de confirmación no llegó por configuración de Resend)
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ConfirmarEmail(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            if (user.EmailConfirmed)
+            {
+                TempData["Success"] = $"El correo de {user.Email} ya estaba confirmado.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var token  = await _userManager.GenerateEmailConfirmationTokenAsync(user);
+            var result = await _userManager.ConfirmEmailAsync(user, token);
+
+            if (result.Succeeded)
+                TempData["Success"] = $"✅ Correo de {user.Email} confirmado manualmente.";
+            else
+                TempData["Error"] = "Error al confirmar: " + string.Join(", ", result.Errors.Select(e => e.Description));
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

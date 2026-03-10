@@ -53,8 +53,8 @@
         </div>
         <div class="col-6 col-md-3">
             <div class="glass-card p-3 text-center">
-                <div class="fw-bold display-6 text-warning">@roles.Count</div>
-                <div class="text-muted small">Roles</div>
+                <div class="fw-bold display-6 text-warning">@Model.Count(u => !u.Usuario.EmailConfirmed)</div>
+                <div class="text-muted small">Sin confirmar</div>
             </div>
         </div>
     </div>
@@ -131,6 +131,10 @@
                                     {
                                         <span class="badge bg-danger rounded-pill px-3"><i class="fas fa-lock me-1"></i>Bloqueado</span>
                                     }
+                                    else if (!usuario.EmailConfirmed)
+                                    {
+                                        <span class="badge bg-warning text-dark rounded-pill px-3"><i class="fas fa-envelope me-1"></i>Sin confirmar</span>
+                                    }
                                     else
                                     {
                                         <span class="badge bg-success rounded-pill px-3"><i class="fas fa-check me-1"></i>Activo</span>
@@ -159,6 +163,19 @@
                                                 onclick="abrirModalPassword('@usuario.Id', '@usuario.Email')">
                                             <i class="fas fa-key"></i>
                                         </button>
+
+                                        @if (!usuario.EmailConfirmed)
+                                        {
+                                            <form asp-action="ConfirmarEmail" method="post" class="d-inline">
+                                                <input type="hidden" name="userId" value="@usuario.Id" />
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-outline-info border-0"
+                                                        title="Confirmar email manualmente"
+                                                        onclick="return confirm('¿Confirmar el correo de @usuario.Email manualmente?')">
+                                                    <i class="fas fa-envelope-open-text"></i>
+                                                </button>
+                                            </form>
+                                        }
                                     </div>
                                 </td>
                             </tr>
