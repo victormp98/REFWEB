@@ -161,6 +161,30 @@
     <script>
     $(document).ready(function() {
         CartManager.updateBadge();
+
+        // ── Notificación de Compra Exitosa (Strip/Webpay/Transferencia) ──
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('pago') === 'exito') {
+            Swal.fire({
+                icon: 'success',
+                title: '¡Pedido Confirmado!',
+                html: 'Tu pago se procesó correctamente y tu pedido ya está en preparación.<br><br><small class="text-muted">Te hemos enviado un correo con los detalles.</small>',
+                confirmButtonText: 'Ver mis pedidos',
+                showCancelButton: true,
+                cancelButtonText: 'Seguir comprando',
+                confirmButtonColor: '#10b981',
+                cancelButtonColor: '#6c757d',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    window.location.href = '/Tienda/Tienda/MisPedidos';
+                }
+            });
+
+            // Limpiar la URL para que no vuelva a salir al recargar
+            const newUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            window.history.replaceState({path: newUrl}, '', newUrl);
+        }
     });
     </script>
 }

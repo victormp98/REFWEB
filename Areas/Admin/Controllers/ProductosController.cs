@@ -18,6 +18,7 @@ namespace RefWeb.Areas.Admin.Controllers
         private readonly IEmailService _emailService;
         private readonly UserManager<IdentityUser> _userManager;
         private readonly ILogger<ProductosController> _logger;
+        private readonly IConfiguration _configuration;
 
         private const string ImageFolder = "images/productos";
 
@@ -26,13 +27,15 @@ namespace RefWeb.Areas.Admin.Controllers
             IWebHostEnvironment hostEnvironment,
             IEmailService emailService,
             UserManager<IdentityUser> userManager,
-            ILogger<ProductosController> logger)
+            ILogger<ProductosController> logger,
+            IConfiguration configuration)
         {
             _context = context;
             _hostEnvironment = hostEnvironment;
             _emailService = emailService;
             _userManager = userManager;
             _logger = logger;
+            _configuration = configuration;
         }
 
         // GET: Admin/Productos
@@ -215,10 +218,11 @@ namespace RefWeb.Areas.Admin.Controllers
 
                 string template = await System.IO.File.ReadAllTextAsync(templatePath);
                 string body = template
-                    .Replace("{ProductoNombre}", producto.Nombre)
+                    .Replace("{Producto}", producto.Nombre)
                     .Replace("{SKU}", producto.CodigoSKU ?? "-")
                     .Replace("{StockActual}", producto.Stock.ToString())
                     .Replace("{StockMinimo}", producto.StockMinimo.ToString())
+                    .Replace("{UrlAdmin}", _configuration["SiteUrl"] + "/Admin/Productos")
                     .Replace("{Year}", DateTime.Now.Year.ToString());
 
                 foreach (var admin in admins)
