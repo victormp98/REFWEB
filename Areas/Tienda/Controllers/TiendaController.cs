@@ -714,5 +714,51 @@ namespace RefWeb.Areas.Tienda.Controllers
 
             return View(pedido);
         }
+
+        /// <summary>El cliente confirma que recibió su paquete.</summary>
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize(Roles = "Cliente")]
+        public async Task<IActionResult> ConfirmarEntrega(int pedidoId)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var cliente = await _context.Clientes.FirstOrDefaultAsync(c => c.UsuarioId == userId);
+            if (cliente == null) return Unauthorized();
+
+            var pedido = await _context.Pedidos
+                .Include(p => p.Envio)
+                .FirstOrDefaultAsync(p => p.Id == pedidoId && p.ClienteId == cliente.Id);
+
+            if (pedido == null) return NotFound();
+
+            if (pedido.EstadoPedido != "Enviado")
+            {
+                TempData["Error"] = "Solo puedes confirmar pedidos que estén en estado 'Enviado'.";
+                return RedirectToAction(nameof(MisPedidos));
+            }
+
+            pedido.EstadoPedido = "Entregado";
+
+            if (pedido.Envio != null)
+            {
+                pedido.Envio.EstadoEnvio  = "Entregado";
+                pedido.Envio.FechaEntrega = DateTime.Now;
+                _context.Update(pedido.Envio);
+
+                _context.HistorialEnvios.Add(new HistorialEnvio
+                {
+                    EnvioId     = pedido.Envio.Id,
+                    Estado      = "Entregado",
+                    Ubicacion   = "Domicilio del Cliente",
+                    Descripcion = "Confirmado por el cliente desde su cuenta.",
+                    Fecha       = DateTime.Now
+                });
+            }
+
+            await _context.SaveChangesAsync();
+
+            TempData["Success"] = "¡Gracias por confirmarlo! Tu pedido quedó marcado como entregado.";
+            return RedirectToAction(nameof(MisPedidos));
+        }
     }
 }

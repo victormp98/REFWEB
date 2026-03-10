@@ -61,6 +61,9 @@
                                     case "Pagado":
                                         <span class="badge bg-info-soft"><i class="fas fa-wallet me-1"></i>Pagado</span>
                                         break;
+                                    case "En Proceso":
+                                        <span class="badge bg-warning-soft text-dark"><i class="fas fa-box me-1"></i>En Proceso</span>
+                                        break;
                                     case "Enviado":
                                         <span class="badge bg-primary-soft"><i class="fas fa-truck me-1"></i>Enviado</span>
                                         break;
@@ -93,19 +96,32 @@
                                 }
                             </td>
                             <td class="text-end pe-4">
-                                <a asp-action="AsignarGuia" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm px-3">
-                                    <i class="fas fa-barcode me-1"></i> Asignar
-                                </a>
-                                @if (item.EstadoPedido == "Enviado")
+                                @if (item.EstadoPedido == "Pagado")
                                 {
-                                    <form asp-action="EntregarPedido" method="post" class="d-inline ms-1">
+                                    <form asp-action="CambiarAEnProceso" method="post" class="d-inline me-1">
                                         @Html.AntiForgeryToken()
                                         <input type="hidden" name="pedidoId" value="@item.Id" />
-                                        <button type="submit" class="btn btn-success btn-sm px-3"
-                                                onclick="return confirm('¿Confirmar entrega del pedido #@item.Id.ToString("D6")?')">
-                                            <i class="fas fa-check-circle me-1"></i> Marcar Entregado
+                                        <button type="submit" class="btn btn-warning btn-sm px-3"
+                                                title="Preparar el paquete">
+                                            <i class="fas fa-box me-1"></i> Preparar
                                         </button>
                                     </form>
+                                }
+                                @if (item.EstadoPedido == "Pagado" || item.EstadoPedido == "En Proceso")
+                                {
+                                    <a asp-action="AsignarGuia" asp-route-id="@item.Id"
+                                       class="btn btn-outline-primary btn-sm px-3"
+                                       title="Asignar guía de envío">
+                                        <i class="fas fa-barcode me-1"></i> Asignar Guía
+                                    </a>
+                                }
+                                @if (item.EstadoPedido == "Enviado")
+                                {
+                                    <a asp-action="AsignarGuia" asp-route-id="@item.Id"
+                                       class="btn btn-outline-secondary btn-sm px-3"
+                                       title="Ver estado de envío">
+                                        <i class="fas fa-truck me-1"></i> Ver Estado
+                                    </a>
                                 }
                             </td>
                         </tr>

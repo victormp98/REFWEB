@@ -51,7 +51,7 @@ namespace RefWeb.Areas.Admin.Controllers
 
             // ── Pedidos ─────────────────────────────────────────────────
             var pedidosPendientes = await _context.Pedidos
-                .CountAsync(p => p.EstadoPedido == "Pendiente" || p.EstadoPedido == "Procesando" || p.EstadoPedido == "Pagado");
+                .CountAsync(p => p.EstadoPedido == "Pendiente" || p.EstadoPedido == "En Proceso" || p.EstadoPedido == "Pagado");
 
 
             // ── Gráfica: ventas últimos 7 días ──────────────────────────

@@ -29,12 +29,13 @@ builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Emai
 builder.Services.AddTransient<IEmailService, EmailService>();
 builder.Services.AddTransient<IEmailSender, EmailService>();
 
-// ── Servicio de Limpieza de Usuarios No Confirmados ───────────────
-// builder.Services.AddHostedService<CleanupUnconfirmedUsersService>();
+// ── Servicios en Segundo Plano (BackgroundService) ────────────────
+// builder.Services.AddHostedService<CleanupUnconfirmedUsersService>(); // descomentado cuando email esté listo
+builder.Services.AddHostedService<AutoCloseEnviosService>(); // cierra envíos sin confirmar después de 21 días
 
 // ── Identity ──────────────────────────────────────────────────────
 builder.Services.AddIdentity<IdentityUser, IdentityRole>(options =>
-    options.SignIn.RequireConfirmedAccount = false)
+    options.SignIn.RequireConfirmedAccount = true)  // SEC: email confirmation required
     .AddEntityFrameworkStores<ApplicationDbContext>()
     .AddDefaultTokenProviders()
     .AddDefaultUI();

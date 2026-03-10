@@ -14,6 +14,19 @@
         </div>
     </div>
 
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["Error"]
+        </div>
+    }
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success d-flex align-items-center gap-2 mb-4">
+            <i class="fas fa-check-circle"></i> @TempData["Success"]
+        </div>
+    }
+
     <div class="row g-4 justify-content-center">
         <div class="col-lg-10">
             <div class="row g-4">
@@ -83,4 +96,51 @@
             </div>
         </div>
     </div>
+
+    @* Estado actual del pedido en el flujo de entrega *@
+    @if (Model.EstadoPedido == "Pagado")
+    {
+        <div class="row g-4 justify-content-center mt-2">
+            <div class="col-lg-10">
+                <div class="glass-card p-4 border border-warning">
+                    <h5 class="fw-bold mb-1 text-warning"><i class="fas fa-box me-2"></i>Marcar como En Proceso</h5>
+                    <p class="text-muted small mb-3">Indica que el paquete está siendo preparado antes de entregarlo a la paquetaría.</p>
+                    <form asp-action="CambiarAEnProceso" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="pedidoId" value="@Model.Id" />
+                        <button type="submit" class="btn btn-warning fw-bold px-5">
+                            <i class="fas fa-box me-2"></i>Confirmar Preparación
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Model.EstadoPedido == "Enviado")
+    {
+        <div class="row g-4 justify-content-center mt-2">
+            <div class="col-lg-10">
+                <div class="glass-card p-4 border border-primary bg-primary bg-opacity-5">
+                    <h5 class="fw-bold mb-1 text-primary"><i class="fas fa-truck me-2"></i>Paquete Enviado</h5>
+                    <p class="text-muted small mb-0">
+                        <i class="fas fa-info-circle me-1"></i>
+                        El paquete está en manos de la paquetaría. El cliente confirmará la entrega desde su cuenta.
+                        Si no confirma en <strong>21 días</strong>, el sistema lo marcará como Entregado automáticamente.
+                    </p>
+                </div>
+            </div>
+        </div>
+    }
+    else if (Model.EstadoPedido == "Entregado")
+    {
+        <div class="row g-4 justify-content-center mt-2">
+            <div class="col-lg-10">
+                <div class="glass-card p-4 bg-success bg-opacity-10 border border-success">
+                    <h5 class="fw-bold text-success mb-1"><i class="fas fa-check-circle me-2"></i>Pedido Entregado</h5>
+                    <p class="text-muted small mb-0">Fecha: @Model.Envio?.FechaEntrega?.ToString("dd/MM/yyyy HH:mm")</p>
+                </div>
+            </div>
+        </div>
+    }
+
 </div>

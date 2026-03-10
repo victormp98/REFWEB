@@ -11,6 +11,19 @@
         <a href="@Url.Action("Index")" class="btn btn-outline-primary">Volver a la Tienda</a>
     </div>
 
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success d-flex align-items-center gap-2 mb-4">
+            <i class="fas fa-check-circle"></i> @TempData["Success"]
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger d-flex align-items-center gap-2 mb-4">
+            <i class="fas fa-exclamation-triangle"></i> @TempData["Error"]
+        </div>
+    }
+
     @if (!Model.Any())
     {
         <div class="card border-0 shadow-sm p-5 text-center">
@@ -49,6 +62,10 @@
                                         case "Pagado": 
                                             <span class="badge bg-info"><i class="fas fa-check me-1"></i>Pagado</span> 
                                             break;
+                                        case "En Proceso":
+                                            <span class="badge bg-warning"><i class="fas fa-box me-1"></i>En Proceso</span>
+                                            <div class="small text-muted mt-1"><i class="fas fa-info-circle me-1"></i>Preparando tu paquete</div>
+                                            break;
                                         case "Enviado": 
                                             <span class="badge bg-primary"><i class="fas fa-truck me-1"></i>Enviado</span> 
                                             <div class="small text-muted mt-1">
@@ -67,9 +84,20 @@
                                     }
                                 </td>
                                 <td class="text-end pe-4">
-                                    <a href="@Url.Action("DetallePedido", new { id = p.Id })" class="btn btn-sm btn-primary shadow-sm">
+                                    <a href="@Url.Action("DetallePedido", new { id = p.Id })" class="btn btn-sm btn-primary shadow-sm me-1">
                                         <i class="fas fa-eye me-1"></i>Detalles
                                     </a>
+                                    @if (p.EstadoPedido == "Enviado")
+                                    {
+                                        <form asp-action="ConfirmarEntrega" method="post" class="d-inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="pedidoId" value="@p.Id" />
+                                            <button type="submit" class="btn btn-sm btn-success shadow-sm"
+                                                    onclick="return confirm('¿Confirmar que recibió el pedido #@p.Id.ToString("D6")? Esta acción no puede deshacerse.')">
+                                                <i class="fas fa-check-double me-1"></i>Confirmé que lo recibí
+                                            </button>
+                                        </form>
+                                    }
                                 </td>
                             </tr>
                         }
