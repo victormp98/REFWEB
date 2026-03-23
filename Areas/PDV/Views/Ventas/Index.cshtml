@@ -242,6 +242,7 @@
         </div>
 </div>
 
+<script src="https://js.stripe.com/v3/"></script>
 <script>
         $(document).ready(function() {
             console.log("PDV Init: INICIANDO SCRIPT JQUERY");
@@ -503,40 +504,52 @@
                     $("#stripe-payment-element").html('<div class="text-center p-3"><div class="spinner-border text-primary"></div></div>');
 
                     const token = $('input[name="__RequestVerificationToken"]').val();
-                    $.post("/PDV/Ventas/IniciarPagoPDV", { __RequestVerificationToken: token }, function(res) {
-                        if (res.success) {
-                            const stripe = Stripe(res.publishableKey);
-                            const elements = stripe.elements({ clientSecret: res.clientSecret });
-                            const paymentElement = elements.create("payment");
-                            $("#stripe-payment-element").empty();
-                            paymentElement.mount("#stripe-payment-element");
-                            
-                            btnConfirm.prop("disabled", false);
-                            btnText.text("Procesar Pago");
-
-                            btnConfirm.off("click").on("click", async function() {
-                                btnConfirm.prop("disabled", true);
-                                spinner.removeClass("d-none");
-                                btnText.text("Procesando...");
+                    $.ajax({
+                        url: '/PDV/Ventas/IniciarPagoPDV',
+                        type: 'POST',
+                        data: { __RequestVerificationToken: token },
+                        success: function(res) {
+                            if (res.success) {
+                                const stripe = Stripe(res.publishableKey);
+                                const elements = stripe.elements({ clientSecret: res.clientSecret });
+                                const paymentElement = elements.create("payment");
+                                $("#stripe-payment-element").empty();
+                                paymentElement.mount("#stripe-payment-element");
                                 
-                                const { error, paymentIntent } = await stripe.confirmPayment({
-                                    elements,
-                                    confirmParams: { return_url: window.location.href },
-                                    redirect: 'if_required'
-                                });
+                                btnConfirm.prop("disabled", false);
+                                btnText.text("Procesar Pago");
 
-                                if (error) {
-                                    errorMsg.text(error.message);
-                                    btnConfirm.prop("disabled", false);
-                                    spinner.addClass("d-none");
-                                    btnText.text("Procesar Pago");
-                                } else if (paymentIntent && paymentIntent.status === 'succeeded') {
-                                    modalStripe.hide();
-                                    ejecutarFinalizarVenta(metodo, notas, total, recibido, paymentIntent.id);
-                                }
-                            });
-                        } else {
-                            Swal.fire("Error", res.message, "error");
+                                btnConfirm.off("click").on("click", async function() {
+                                    btnConfirm.prop("disabled", true);
+                                    spinner.removeClass("d-none");
+                                    btnText.text("Procesando...");
+                                    
+                                    const { error, paymentIntent } = await stripe.confirmPayment({
+                                        elements,
+                                        confirmParams: { return_url: window.location.href },
+                                        redirect: 'if_required'
+                                    });
+
+                                    if (error) {
+                                        errorMsg.text(error.message);
+                                        btnConfirm.prop("disabled", false);
+                                        spinner.addClass("d-none");
+                                        btnText.text("Procesar Pago");
+                                    } else if (paymentIntent && paymentIntent.status === 'succeeded') {
+                                        modalStripe.hide();
+                                        ejecutarFinalizarVenta(metodo, notas, total, recibido, paymentIntent.id);
+                                    }
+                                });
+                            } else {
+                                Swal.fire("Error de pago", res.message, "error");
+                                modalStripe.hide();
+                            }
+                        },
+                        error: function(xhr) {
+                            const msg = xhr.status === 404
+                                ? "Acción de pago no encontrada en el servidor."
+                                : `Error del servidor (${xhr.status}). Revisa los logs de la aplicación.`;
+                            Swal.fire("Error", msg, "error");
                             modalStripe.hide();
                         }
                     });

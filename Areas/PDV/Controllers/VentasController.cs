@@ -151,26 +151,41 @@ namespace RefWeb.Areas.PDV.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> IniciarPagoPDV()
         {
-            var carrito = GetCarrito();
-            if (!carrito.Any()) return Json(new { success = false, message = "El carrito está vacío." });
-
-            var totalDecimal = carrito.Sum(i => i.PrecioUnitario * i.Cantidad);
-            if (totalDecimal <= 0) return Json(new { success = false, message = "Total inválido." });
-
-            var total = (long)(totalDecimal * 100);
-
-            var options = new PaymentIntentCreateOptions
+            try
             {
-                Amount = total,
-                Currency = "mxn",
-                PaymentMethodTypes = new List<string> { "card" },
-                Description = $"Venta PDV - {DateTime.Now:yyyy-MM-dd HH:mm}"
-            };
+                var carrito = GetCarrito();
+                if (!carrito.Any()) return Json(new { success = false, message = "El carrito está vacío." });
 
-            var service = new PaymentIntentService();
-            var intent = await service.CreateAsync(options);
+                var totalDecimal = carrito.Sum(i => i.PrecioUnitario * i.Cantidad);
+                if (totalDecimal <= 0) return Json(new { success = false, message = "Total inválido." });
 
-            return Json(new { success = true, clientSecret = intent.ClientSecret, publishableKey = _configuration["Stripe:PublishableKey"] });
+                var secretKey = _configuration["Stripe:SecretKey"];
+                if (string.IsNullOrEmpty(secretKey))
+                    return Json(new { success = false, message = "Pago con tarjeta no configurado (falta Stripe:SecretKey)." });
+
+                var total = (long)(totalDecimal * 100);
+
+                var options = new PaymentIntentCreateOptions
+                {
+                    Amount = total,
+                    Currency = "mxn",
+                    PaymentMethodTypes = new List<string> { "card" },
+                    Description = $"Venta PDV - {DateTime.Now:yyyy-MM-dd HH:mm}"
+                };
+
+                var service = new PaymentIntentService();
+                var intent = await service.CreateAsync(options);
+
+                return Json(new { success = true, clientSecret = intent.ClientSecret, publishableKey = _configuration["Stripe:PublishableKey"] });
+            }
+            catch (StripeException stripeEx)
+            {
+                return Json(new { success = false, message = $"Error de Stripe: {stripeEx.StripeError?.Message ?? stripeEx.Message}" });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = $"Error al iniciar pago: {ex.Message}" });
+            }
         }
 
         [HttpPost]

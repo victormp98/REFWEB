@@ -39,7 +39,7 @@ namespace RefWeb.Models
         public string Estado { get; set; } = "Abierto"; // 'Abierto', 'Cerrado'
 
         [StringLength(500)]
-        public string Observaciones { get; set; }
+        public string? Observaciones { get; set; }
 
         // Relación con Ventas
         public ICollection<Venta> Ventas { get; set; }
