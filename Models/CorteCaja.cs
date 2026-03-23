@@ -31,9 +31,9 @@ namespace RefWeb.Models
         [ForeignKey("UsuarioAperturaId")]
         public IdentityUser UsuarioApertura { get; set; }
 
-        public string UsuarioCierreId { get; set; }
+        public string? UsuarioCierreId { get; set; }
         [ForeignKey("UsuarioCierreId")]
-        public IdentityUser UsuarioCierre { get; set; }
+        public IdentityUser? UsuarioCierre { get; set; }
 
         [StringLength(20)]
         public string Estado { get; set; } = "Abierto"; // 'Abierto', 'Cerrado'
