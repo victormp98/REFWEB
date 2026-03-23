@@ -115,7 +115,11 @@ namespace RefWeb.Services
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error al enviar email a {To} | Asunto: {Subject}", to, subject);
+                // DEBUG: Registrar excepción completa para diagnóstico (ver logs de Coolify/consola local)
+                var inner = ex.InnerException != null ? $" | Inner: {ex.InnerException.Message}" : "";
+                _logger.LogError(ex, "Error al enviar email a {To} | Asunto: {Subject} | Error: {Msg}{Inner}",
+                    to, subject, ex.Message, inner);
+                throw; // Relanzar para que el registro falle visiblemente y no de forma silenciosa
             }
         }
     }

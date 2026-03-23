@@ -106,8 +106,8 @@ app.Use(async (context, next) =>
     headers["Permissions-Policy"]        = "camera=(), microphone=(), geolocation=()";
     headers["Content-Security-Policy"]   =
         "default-src 'self'; " +
-        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com https://cdn.datatables.net; " +
-        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.datatables.net https://fonts.googleapis.com; " +
+        "script-src 'self' 'unsafe-inline' https://js.stripe.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://code.jquery.com https://cdn.datatables.net https://static.cloudflareinsights.com; " +
+        "style-src 'self' 'unsafe-inline' https://cdnjs.cloudflare.com https://cdn.datatables.net https://fonts.googleapis.com https://code.jquery.com; " +
         "font-src 'self' https://cdnjs.cloudflare.com https://fonts.gstatic.com; " +
         "img-src 'self' data: https:; " +
         "frame-src https://js.stripe.com https://hooks.stripe.com; " +
