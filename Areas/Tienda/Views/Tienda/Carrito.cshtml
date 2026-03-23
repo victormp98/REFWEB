@@ -153,15 +153,15 @@
         function updateQty(id, delta) {
             let cart = CartManager.get();
             let item = cart.find(i => i.productoId === id);
-            if (item) {
-                item.cantidad += delta;
-                if (item.cantidad <= 0) {
-                    CartManager.remove(id);
-                } else {
-                    CartManager.save(cart);
-                }
+            if (!item) return;
+
+            const newQty = item.cantidad + delta;
+            if (newQty <= 0) {
+                CartManager.remove(id);
+            } else {
+                CartManager.updateQuantity(id, newQty);
             }
-            renderCart();
+            // renderCart() es llamado automáticamente por el listener 'cartUpdated'
         }
 
         function prepareCheckout() {
