@@ -32,15 +32,21 @@ namespace RefWeb.Areas.Tienda.Controllers
             _hostEnvironment = hostEnvironment;
         }
 
-        public async Task<IActionResult> Index(int? categoriaId, int pagina = 1)
+        public async Task<IActionResult> Index(int? categoriaId, string? busqueda, int pagina = 1)
         {
             int itemsPorPagina = 12;
-            var query = _context.Productos.Where(p => p.Activo);
+            var query = _context.Productos
+                .Include(p => p.Categoria)
+                .Where(p => p.Activo);
 
             if (categoriaId.HasValue)
-            {
                 query = query.Where(p => p.CategoriaId == categoriaId.Value);
-            }
+
+            if (!string.IsNullOrWhiteSpace(busqueda))
+                query = query.Where(p =>
+                    p.Nombre.Contains(busqueda) ||
+                    (p.Descripcion != null && p.Descripcion.Contains(busqueda)) ||
+                    (p.CodigoSKU != null && p.CodigoSKU.Contains(busqueda)));
 
             var totalItems = await query.CountAsync();
             var productos = await query
@@ -53,6 +59,7 @@ namespace RefWeb.Areas.Tienda.Controllers
             ViewBag.PaginaActual = pagina;
             ViewBag.TotalPaginas = (int)Math.Ceiling(totalItems / (double)itemsPorPagina);
             ViewBag.CategoriaSeleccionada = categoriaId;
+            ViewBag.Busqueda = busqueda;
 
             return View(productos);
         }

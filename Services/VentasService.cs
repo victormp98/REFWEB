@@ -90,9 +90,15 @@ namespace RefWeb.Services
                     // 4. Verificar Stock Bajo y Notificar
                     if (stockNuevo <= producto.StockMinimo)
                     {
-                        // Actualizar el objeto en memoria para la notificación
-                        producto.Stock = stockNuevo;
-                        _ = NotificarStockBajoAsync(producto);
+                        // Crear instancia temporal para no modificar el objeto rastreado por EF
+                        var prodNotificacion = new Producto
+                        {
+                            Nombre = producto.Nombre,
+                            CodigoSKU = producto.CodigoSKU,
+                            StockMinimo = producto.StockMinimo,
+                            Stock = stockNuevo
+                        };
+                        _ = NotificarStockBajoAsync(prodNotificacion);
                     }
                 }
 
@@ -110,8 +116,11 @@ namespace RefWeb.Services
 
                 return (true, "Venta procesada exitosamente.", venta);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
+                var username = _context.Users.FirstOrDefault(u => u.Id == userId)?.UserName ?? userId;
+                _logger?.LogError(ex, "[VENTAS/CONCURRENCY] Error procesando venta {Folio} para usuario {Usuario}. Motivo real del bloqueo detectado.", venta.Folio, username);
+                
                 if (ownsTransaction && transaction != null) await transaction.RollbackAsync();
                 return (false, "Error de concurrencia: El stock de uno o más productos ha cambiado. Por favor, intente de nuevo.", null);
             }
@@ -172,8 +181,9 @@ namespace RefWeb.Services
 
                 return (true, "Merma registrada con éxito.", merma);
             }
-            catch (DbUpdateConcurrencyException)
+            catch (DbUpdateConcurrencyException ex)
             {
+                _logger?.LogError(ex, "[MERMA/CONCURRENCY] Error registrando merma real para producto {ProductoId} (Cantidad: {Cantidad}).", merma.ProductoId, merma.Cantidad);
                 await transaction.RollbackAsync();
                 return (false, "Error de concurrencia al registrar la merma. El stock ha cambiado.", null);
             }

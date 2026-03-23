@@ -1,4 +1,4 @@
-﻿@model IEnumerable<RefWeb.Models.Producto>
+@model IEnumerable<RefWeb.Models.Producto>
 @{
     ViewData["Title"] = "Tienda Online";
 }
@@ -61,13 +61,19 @@
                             <p class="text-muted small mb-0">Explora nuestro catálogo de autopartes de alta calidad.</p>
                         </div>
                         <div class="col-md-5 mt-3 mt-md-0">
-                            <div class="input-group">
+                            <form method="get" asp-action="Index" class="input-group">
+                                @if (ViewBag.CategoriaSeleccionada != null)
+                                {
+                                    <input type="hidden" name="categoriaId" value="@ViewBag.CategoriaSeleccionada" />
+                                }
                                 <span class="input-group-text bg-transparent border-end-0 text-muted ps-3">
                                     <i class="fas fa-search"></i>
                                 </span>
-                                <input type="text" class="form-control border-start-0 shadow-none" placeholder="¿Qué estás buscando?..." />
-                                <button class="btn btn-primary">Buscar</button>
-                            </div>
+                                <input type="text" name="busqueda" value="@ViewBag.Busqueda"
+                                       class="form-control border-start-0 shadow-none"
+                                       placeholder="¿Qué estás buscando?..." />
+                                <button type="submit" class="btn btn-primary">Buscar</button>
+                            </form>
                         </div>
                     </div>
                 </div>
