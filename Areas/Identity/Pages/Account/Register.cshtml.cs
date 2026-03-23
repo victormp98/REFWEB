@@ -151,14 +151,54 @@ namespace RefWeb.Areas.Identity.Pages.Account
                     var userId = await _userManager.GetUserIdAsync(user);
                     var code = await _userManager.GenerateEmailConfirmationTokenAsync(user);
                     code = WebEncoders.Base64UrlEncode(Encoding.UTF8.GetBytes(code));
-                    var callbackUrl = Url.Page(
-                        "/Account/ConfirmEmail",
-                        pageHandler: null,
-                        values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
-                        protocol: Request.Scheme);
 
-                    await _emailSender.SendEmailAsync(Input.Email, "Confirma tu cuenta",
-                        $"Por favor confirma tu cuenta haciendo <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clic aquí</a>.");
+                    // DIAGNÓSTICO: Registrar host y esquema para detectar problemas con proxy
+                    _logger.LogInformation("[REGISTER] Request.Scheme={Scheme} | Request.Host={Host}",
+                        Request.Scheme, Request.Host);
+
+                    try
+                    {
+                        // Usar SiteUrl (config) si está disponible; de lo contrario caer en Request.Host
+                        var siteUrl = HttpContext.RequestServices
+                            .GetRequiredService<IConfiguration>()["SiteUrl"];
+
+                        string callbackUrl;
+                        if (!string.IsNullOrEmpty(siteUrl))
+                        {
+                            var uri = new Uri(siteUrl);
+                            var token = System.Net.WebUtility.UrlEncode(
+                                $"{code}");
+                            callbackUrl = Url.Page(
+                                "/Account/ConfirmEmail",
+                                pageHandler: null,
+                                values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
+                                protocol: uri.Scheme,
+                                host: uri.Host)!;
+                            _logger.LogInformation("[REGISTER] Usando SiteUrl para el enlace: {SiteUrl}", siteUrl);
+                        }
+                        else
+                        {
+                            callbackUrl = Url.Page(
+                                "/Account/ConfirmEmail",
+                                pageHandler: null,
+                                values: new { area = "Identity", userId = userId, code = code, returnUrl = returnUrl },
+                                protocol: Request.Scheme)!;
+                            _logger.LogWarning("[REGISTER] SiteUrl no configurado, usando Request.Host.");
+                        }
+
+                        _logger.LogInformation("[REGISTER] Enlace de confirmación generado: {Url}", callbackUrl);
+
+                        _logger.LogInformation("[REGISTER] Enviando correo de confirmación a {Email}...", Input.Email);
+                        await _emailSender.SendEmailAsync(Input.Email, "Confirma tu cuenta",
+                            $"Por favor confirma tu cuenta haciendo <a href='{HtmlEncoder.Default.Encode(callbackUrl)}'>clic aquí</a>.");
+                        _logger.LogInformation("[REGISTER] Correo enviado exitosamente a {Email}.", Input.Email);
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(ex, "[REGISTER] Error al generar enlace o enviar correo a {Email}. Mensaje: {Msg}",
+                            Input.Email, ex.Message);
+                        throw; // Propagar para que el error sea visible en logs
+                    }
 
                     if (_userManager.Options.SignIn.RequireConfirmedAccount)
                     {
