@@ -89,6 +89,8 @@ namespace RefWeb.Areas.Admin.Controllers
                 else
                 {
                     producto.ImagenUrl = "";
+                    producto.ImagenNombre = "";
+                    producto.ImagenTipo = "";
                 }
 
                 producto.FechaCreacion = DateTime.Now;
@@ -161,12 +163,19 @@ namespace RefWeb.Areas.Admin.Controllers
                         if (ok)
                         {
                             EliminarImagen(pDb.ImagenUrl);
-                            pDb.ImagenUrl = url!;
+                            pDb.ImagenUrl = url;
                             pDb.ImagenNombre = imagen.FileName;
                             pDb.ImagenTipo = imagen.ContentType;
                             pDb.ImagenTamanio = (int)imagen.Length;
                             pDb.FechaImagen = DateTime.Now;
                         }
+                    }
+                    else
+                    {
+                        // Si no hay imagen nueva, aseguramos que los campos no sean nulos si ya estaban vacíos
+                        pDb.ImagenUrl ??= "";
+                        pDb.ImagenNombre ??= "";
+                        pDb.ImagenTipo ??= "";
                     }
 
                     _context.Update(pDb);

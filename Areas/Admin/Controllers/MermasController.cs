@@ -41,17 +41,33 @@ namespace RefWeb.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Merma merma)
         {
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Productos = await _context.Productos.Where(p => p.Activo).ToListAsync();
+                return View(merma);
+            }
+
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId))
+            {
+                ModelState.AddModelError("", "Usuario no identificado. Por favor inicie sesión de nuevo.");
+                ViewBag.Productos = await _context.Productos.Where(p => p.Activo).ToListAsync();
+                return View(merma);
+            }
+
             var (success, message, result) = await _ventasService.RegistrarMermaAsync(merma, userId);
 
             if (success)
             {
+                TempData["Success"] = message;
                 return RedirectToAction(nameof(Index));
             }
 
             ModelState.AddModelError("", message);
+            TempData["Error"] = message;
             ViewBag.Productos = await _context.Productos.Where(p => p.Activo).ToListAsync();
             return View(merma);
         }
     }
 }
+

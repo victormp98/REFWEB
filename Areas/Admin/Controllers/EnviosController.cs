@@ -18,13 +18,15 @@ namespace RefWeb.Areas.Admin.Controllers
     public class EnviosController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IVentasService _ventasService;
         private readonly IEmailService _emailService;
         private readonly IHostEnvironment _hostEnvironment;
         private readonly ILogger<EnviosController> _logger;
 
-        public EnviosController(ApplicationDbContext context, IEmailService emailService, IHostEnvironment hostEnvironment, ILogger<EnviosController> logger)
+        public EnviosController(ApplicationDbContext context, IVentasService ventasService, IEmailService emailService, IHostEnvironment hostEnvironment, ILogger<EnviosController> logger)
         {
             _context = context;
+            _ventasService = ventasService;
             _emailService = emailService;
             _hostEnvironment = hostEnvironment;
             _logger = logger;
@@ -196,5 +198,25 @@ namespace RefWeb.Areas.Admin.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CancelarPedido(int pedidoId, string motivo)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrEmpty(userId)) return Unauthorized();
+
+            var (success, message) = await _ventasService.CancelarPedidoAsync(pedidoId, userId, motivo ?? "Cancelado por el Administrador");
+
+            if (success)
+            {
+                TempData["Success"] = message;
+            }
+            else
+            {
+                TempData["Error"] = message;
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

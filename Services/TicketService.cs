@@ -37,7 +37,7 @@ namespace RefWeb.Services
 <html>
 <head>
     <style>
-        body {{ font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 10px; font-size: 12px; }}
+        body {{ font-family: 'Courier New', Courier, monospace; width: 80mm; margin: 0; padding: 2mm; font-size: 14pt; box-sizing: border-box; }}
         .header {{ text-align: center; margin-bottom: 10px; }}
         .header h3 {{ margin: 0; font-size: 14px; }}
         .header p {{ margin: 2px 0; font-size: 11px; }}
@@ -98,6 +98,7 @@ namespace RefWeb.Services
                     ColorMode = ColorMode.Color,
                     Orientation = Orientation.Portrait,
                     PaperSize = PaperKind.A4,
+                    Margins = new MarginSettings { Top = 0, Bottom = 0, Left = 0, Right = 0, Unit = Unit.Millimeters }
                 },
                 Objects =
                 {

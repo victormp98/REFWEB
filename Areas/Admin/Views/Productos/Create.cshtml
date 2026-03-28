@@ -21,6 +21,13 @@
 
 <form asp-action="Create" enctype="multipart/form-data">
     <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4"></div>
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+            <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
 
     <div class="row">
         <div class="col-lg-8">
@@ -31,27 +38,31 @@
                 <div class="card-body px-4 pb-4">
                     <div class="row g-3">
                         <div class="col-md-12">
-                            <label asp-for="Nombre" class="form-label fw-600">Nombre del Producto</label>
-                            <input asp-for="Nombre" class="form-control form-control-modern" placeholder="Ej. Filtro de Aceite sintético" />
+                            <label asp-for="Nombre" class="form-label fw-600">Nombre del Producto *</label>
+                            <input asp-for="Nombre" class="form-control form-control-modern" placeholder="Ej. Filtro de Aceite sintético" required />
                             <span asp-validation-for="Nombre" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="CodigoSKU" class="form-label fw-600">SKU</label>
-                            <input asp-for="CodigoSKU" class="form-control form-control-modern" placeholder="REF-001" />
+                            <label asp-for="CodigoSKU" class="form-label fw-600">SKU *</label>
+                            <input asp-for="CodigoSKU" class="form-control form-control-modern" placeholder="REF-001" required />
+                            <span asp-validation-for="CodigoSKU" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="CodigoBarras" class="form-label fw-600">Código Barras</label>
-                            <input asp-for="CodigoBarras" class="form-control form-control-modern" placeholder="750123456789" />
+                            <label asp-for="CodigoBarras" class="form-label fw-600">Código Barras *</label>
+                            <input asp-for="CodigoBarras" class="form-control form-control-modern" placeholder="750123456789" required />
+                            <span asp-validation-for="CodigoBarras" class="text-danger small"></span>
                         </div>
                         <div class="col-12">
-                            <label asp-for="Descripcion" class="form-label fw-600">Descripción</label>
-                            <textarea asp-for="Descripcion" class="form-control form-control-modern" rows="3"></textarea>
+                            <label asp-for="Descripcion" class="form-label fw-600">Descripción *</label>
+                            <textarea asp-for="Descripcion" class="form-control form-control-modern" rows="3" required placeholder="Describe brevemente las características y compatibilidad..."></textarea>
+                            <span asp-validation-for="Descripcion" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="CategoriaId" class="form-label fw-600">Categoría</label>
-                            <select asp-for="CategoriaId" class="form-select form-select-modern" asp-items="ViewBag.CategoriaId">
+                            <label asp-for="CategoriaId" class="form-label fw-600">Categoría *</label>
+                            <select asp-for="CategoriaId" class="form-select form-select-modern" asp-items="ViewBag.CategoriaId" required>
                                 <option value="">-- Seleccionar --</option>
                             </select>
+                            <span asp-validation-for="CategoriaId" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-600 d-block mb-3">Estado</label>
@@ -71,10 +82,10 @@
                 <div class="card-body px-4 pb-4">
                     <div class="row g-3">
                         <div class="col-md-4">
-                            <label asp-for="Precio" class="form-label fw-600">Precio Venta</label>
+                            <label asp-for="Precio" class="form-label fw-600">Precio Venta *</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light">$</span>
-                                <input asp-for="Precio" class="form-control form-control-modern" placeholder="0.00" />
+                                <input asp-for="Precio" class="form-control form-control-modern" placeholder="0.00" required />
                             </div>
                             <span asp-validation-for="Precio" class="text-danger small"></span>
                         </div>

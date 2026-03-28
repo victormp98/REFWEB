@@ -18,6 +18,14 @@
         <input type="hidden" asp-for="Id" />
         <input type="hidden" asp-for="ImagenUrl" />
         <div asp-validation-summary="ModelOnly" class="alert alert-danger mb-4"></div>
+        
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger alert-dismissible fade show mb-4" role="alert">
+                <i class="fas fa-exclamation-triangle me-2"></i> @TempData["Error"]
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        }
 
         <div class="row g-4">
             <div class="col-lg-8">
@@ -26,26 +34,30 @@
                     <div class="row g-3">
                         <div class="col-12">
                             <label asp-for="Nombre" class="form-label fw-bold small text-uppercase">Nombre *</label>
-                            <input asp-for="Nombre" class="form-control" />
+                            <input asp-for="Nombre" class="form-control" required />
                             <span asp-validation-for="Nombre" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="CodigoSKU" class="form-label fw-bold small text-uppercase">SKU</label>
-                            <input asp-for="CodigoSKU" class="form-control" />
+                            <label asp-for="CodigoSKU" class="form-label fw-bold small text-uppercase">SKU *</label>
+                            <input asp-for="CodigoSKU" class="form-control" required />
+                            <span asp-validation-for="CodigoSKU" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="CodigoBarras" class="form-label fw-bold small text-uppercase">Código Barras</label>
-                            <input asp-for="CodigoBarras" class="form-control" />
+                            <label asp-for="CodigoBarras" class="form-label fw-bold small text-uppercase">Código Barras *</label>
+                            <input asp-for="CodigoBarras" class="form-control" required />
+                            <span asp-validation-for="CodigoBarras" class="text-danger small"></span>
                         </div>
                         <div class="col-12">
-                            <label asp-for="Descripcion" class="form-label fw-bold small text-uppercase">Descripción</label>
-                            <textarea asp-for="Descripcion" class="form-control" rows="3"></textarea>
+                            <label asp-for="Descripcion" class="form-label fw-bold small text-uppercase">Descripción *</label>
+                            <textarea asp-for="Descripcion" class="form-control" rows="3" required></textarea>
+                            <span asp-validation-for="Descripcion" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
-                            <label asp-for="CategoriaId" class="form-label fw-bold small text-uppercase">Categoría</label>
-                            <select asp-for="CategoriaId" class="form-select" asp-items="@(new SelectList(ViewBag.Categorias, "Id", "Nombre"))">
+                            <label asp-for="CategoriaId" class="form-label fw-bold small text-uppercase">Categoría *</label>
+                            <select asp-for="CategoriaId" class="form-select" asp-items="@(new SelectList(ViewBag.Categorias, "Id", "Nombre"))" required>
                                 <option value="">-- Seleccionar --</option>
                             </select>
+                            <span asp-validation-for="CategoriaId" class="text-danger small"></span>
                         </div>
                         <div class="col-md-6">
                             <label class="form-label fw-bold small text-uppercase d-block mb-3">Estado</label>
@@ -64,7 +76,7 @@
                             <label asp-for="Precio" class="form-label fw-bold small text-uppercase">Precio Venta *</label>
                             <div class="input-group">
                                 <span class="input-group-text bg-light fw-bold">$</span>
-                                <input asp-for="Precio" class="form-control" type="number" step="0.01" />
+                                <input asp-for="Precio" class="form-control" type="number" step="0.01" required />
                             </div>
                             <span asp-validation-for="Precio" class="text-danger small"></span>
                         </div>

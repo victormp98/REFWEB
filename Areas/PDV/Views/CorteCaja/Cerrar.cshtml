@@ -60,7 +60,7 @@
             <div class="glass-card p-4 sticky-top" style="top: 100px;">
                 <h5 class="fw-bold mb-4 text-primary"><i class="fas fa-lock me-2"></i>Confirmar Cierre</h5>
 
-                <form asp-action="Cerrar" asp-route-id="@Model.Id" method="post">
+                <form asp-action="Cerrar" asp-route-id="@Model.Id" method="post" id="formCerrarTurno" onsubmit="return confirm('¿Confirmas el cierre del turno?')">
                     @Html.AntiForgeryToken()
 
                     <div class="mb-4">
@@ -83,8 +83,7 @@
                     </div>
 
                     <div class="d-grid gap-3">
-                        <button type="submit" class="btn btn-primary py-3 shadow-lg"
-                                onclick="return confirm('¿Confirmas el cierre del turno?')">
+                        <button type="submit" class="btn btn-primary py-3 shadow-lg" id="btnConfirmarCierre">
                             <i class="fas fa-cash-register me-2"></i> Confirmar Cierre
                         </button>
                         <a asp-action="Index" class="btn btn-link text-muted text-decoration-none">Cancelar</a>

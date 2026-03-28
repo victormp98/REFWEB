@@ -16,9 +16,18 @@
 
     @if (TempData["Success"] != null)
     {
-        <div class="glass-card bg-success border-0 text-white p-3 mb-4 d-flex align-items-center animate-fade-in">
+        <div class="glass-card bg-success border-0 text-white p-3 mb-4 d-flex align-items-center animate-fade-in shadow-sm">
             <i class="fas fa-check-circle me-3 fs-4"></i>
             <div>@TempData["Success"]</div>
+            <button type="button" class="btn-close btn-close-white ms-auto shadow-none" data-bs-dismiss="alert"></button>
+        </div>
+    }
+
+    @if (TempData["Error"] != null)
+    {
+        <div class="glass-card bg-danger border-0 text-white p-3 mb-4 d-flex align-items-center animate-fade-in shadow-sm">
+            <i class="fas fa-exclamation-circle me-3 fs-4"></i>
+            <div>@TempData["Error"]</div>
             <button type="button" class="btn-close btn-close-white ms-auto shadow-none" data-bs-dismiss="alert"></button>
         </div>
     }
@@ -114,6 +123,16 @@
                                        title="Asignar guía de envío">
                                         <i class="fas fa-barcode me-1"></i> Asignar Guía
                                     </a>
+
+                                    <form asp-action="CancelarPedido" method="post" class="d-inline ms-1" 
+                                          onsubmit="return confirm('¿Estás seguro de que deseas cancelar el pedido #@item.Id.ToString("D6")? El stock será devuelto al inventario y esta acción no se puede deshacer.');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="pedidoId" value="@item.Id" />
+                                        <input type="hidden" name="motivo" value="Cancelado desde el panel de administración" />
+                                        <button type="submit" class="btn btn-outline-danger btn-sm px-3" title="Cancelar Pedido">
+                                            <i class="fas fa-ban me-1"></i> Cancelar
+                                        </button>
+                                    </form>
                                 }
                                 @if (item.EstadoPedido == "Enviado")
                                 {

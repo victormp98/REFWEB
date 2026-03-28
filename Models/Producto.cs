@@ -7,20 +7,32 @@ namespace RefWeb.Models
 {
     public class Producto
     {
+        public Producto()
+        {
+            ImagenUrl = string.Empty;
+            ImagenNombre = string.Empty;
+            ImagenTipo = string.Empty;
+            UnidadMedida = "Pieza";
+            UbicacionAlmacen = string.Empty;
+        }
+
         [Key]
         public int Id { get; set; }
 
+        [Required(ErrorMessage = "El código de barras es obligatorio.")]
         [StringLength(50)]
-        public string CodigoBarras { get; set; }
+        public string? CodigoBarras { get; set; }
 
+        [Required(ErrorMessage = "El SKU es obligatorio para el inventario.")]
         [StringLength(50)]
-        public string CodigoSKU { get; set; }
+        public string? CodigoSKU { get; set; }
 
         [Required]
         [StringLength(200)]
         public string Nombre { get; set; }
 
-        public string Descripcion { get; set; }
+        [Required(ErrorMessage = "La descripción del producto es necesaria.")]
+        public string? Descripcion { get; set; }
 
         [Required]
         [Range(0.01, double.MaxValue, ErrorMessage = "El precio debe ser mayor a 0.")]
@@ -67,13 +79,13 @@ namespace RefWeb.Models
 
         // Imágenes
         [StringLength(500)]
-        public string ImagenUrl { get; set; }
+        public string? ImagenUrl { get; set; }
 
         [StringLength(100)]
-        public string ImagenNombre { get; set; }
+        public string? ImagenNombre { get; set; }
 
         [StringLength(50)]
-        public string ImagenTipo { get; set; }
+        public string? ImagenTipo { get; set; }
 
         public int? ImagenTamanio { get; set; }
         public DateTime? FechaImagen { get; set; }
@@ -82,7 +94,7 @@ namespace RefWeb.Models
         public int? ProveedorId { get; set; }
 
         [StringLength(50)]
-        public string UbicacionAlmacen { get; set; }
+        public string? UbicacionAlmacen { get; set; }
 
         public DateTime? FechaUltimaCompra { get; set; }
         public DateTime? FechaUltimaVenta { get; set; }

@@ -93,6 +93,22 @@
                 </div>
             </div>
 
+            @if (Model.EstadoPedido != "Cancelado")
+            {
+                <div class="alert alert-light border-0 shadow-sm p-3 mb-4 rounded-3 animate-fade-in" style="font-size: 0.9rem;">
+                    <div class="d-flex align-items-center mb-2">
+                        <i class="fas fa-info-circle text-primary me-2 fs-5"></i>
+                        <h6 class="mb-0 fw-bold">Políticas de Cancelación</h6>
+                    </div>
+                    <p class="text-muted mb-2 lh-sm">
+                        Una vez realizado el pago y procesado el pedido, no se admiten cancelaciones automáticas.
+                    </p>
+                    <p class="small text-muted mb-0 italic">
+                        Para casos excepcionales, por favor contacte a <a href="mailto:soporte@refweb.com" class="text-decoration-none">soporte@refweb.com</a>.
+                    </p>
+                </div>
+            }
+
             @if (Model.Envio != null)
             {
                 <div class="card border-0 shadow-sm mb-4">

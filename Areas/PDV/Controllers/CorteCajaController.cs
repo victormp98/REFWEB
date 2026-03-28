@@ -100,8 +100,7 @@ namespace RefWeb.Areas.PDV.Controllers
         // POST: PDV/CorteCaja/Cerrar/5
         [HttpPost]
         [ValidateAntiForgeryToken]
-        [ActionName("Cerrar")]
-        public async Task<IActionResult> CerrarConfirmar(int id, decimal montoFinal, string? observaciones)
+        public async Task<IActionResult> Cerrar(int id, decimal montoFinal, string? observaciones)
         {
             var corte = await _context.CortesCaja.FindAsync(id);
             if (corte == null) return NotFound();

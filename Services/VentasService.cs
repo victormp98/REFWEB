@@ -136,6 +136,8 @@ namespace RefWeb.Services
 
         public async Task<(bool Success, string Message, Merma? Merma)> RegistrarMermaAsync(Merma merma, string userId)
         {
+            if (string.IsNullOrEmpty(userId)) return (false, "Sesión de usuario inválida.", null);
+
             using var transaction = await _context.Database.BeginTransactionAsync();
             try
             {
@@ -152,10 +154,14 @@ namespace RefWeb.Services
 
                 // 1. Registrar Merma
                 merma.ResponsableId = userId;
+                merma.AutorizadoPorId ??= userId; // Si no viene, el mismo que reporta autoriza
                 merma.Fecha = DateTime.Now;
                 _context.Mermas.Add(merma);
 
                 // 2. Generar Movimiento de Inventario
+                string notasMov = $"Merma: {merma.TipoMerma} - {merma.Motivo}";
+                if (notasMov.Length > 500) notasMov = notasMov.Substring(0, 497) + "...";
+
                 var movimiento = new InventarioMovimiento
                 {
                     ProductoId = producto.Id,
@@ -166,7 +172,7 @@ namespace RefWeb.Services
                     TipoReferencia = "Merma",
                     UsuarioId = userId,
                     Fecha = DateTime.Now,
-                    Notas = $"Merma: {merma.TipoMerma} - {merma.Motivo}"
+                    Notas = notasMov
                 };
                 _context.InventarioMovimientos.Add(movimiento);
 
@@ -183,14 +189,87 @@ namespace RefWeb.Services
             }
             catch (DbUpdateConcurrencyException ex)
             {
-                _logger?.LogError(ex, "[MERMA/CONCURRENCY] Error registrando merma real para producto {ProductoId} (Cantidad: {Cantidad}).", merma.ProductoId, merma.Cantidad);
+                _logger?.LogError(ex, "[MERMA/CONCURRENCY] Error registrando merma para producto {ProductoId}.", merma.ProductoId);
                 await transaction.RollbackAsync();
                 return (false, "Error de concurrencia al registrar la merma. El stock ha cambiado.", null);
             }
             catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                return (false, $"Error al registrar merma: {ex.Message}", null);
+                var errorMsg = ex.InnerException?.Message ?? ex.Message;
+                _logger?.LogError(ex, "Error al registrar merma. Detalle: {Error}", errorMsg);
+                return (false, $"Error al registrar merma: {errorMsg}", null);
+            }
+        }
+
+        public async Task<(bool Success, string Message)> CancelarPedidoAsync(int pedidoId, string userId, string motivo = "Cancelado por el Administrador")
+        {
+            using var transaction = await _context.Database.BeginTransactionAsync();
+            try
+            {
+                var pedido = await _context.Pedidos
+                    .Include(p => p.Detalles)
+                    .Include(p => p.Venta)
+                    .FirstOrDefaultAsync(p => p.Id == pedidoId);
+
+                if (pedido == null) return (false, "Pedido no encontrado.");
+
+                if (pedido.EstadoPedido == "Cancelado") return (false, "El pedido ya está cancelado.");
+                if (pedido.EstadoPedido == "Enviado" || pedido.EstadoPedido == "Entregado")
+                {
+                    return (false, "No se puede cancelar un pedido que ya ha sido enviado o entregado.");
+                }
+
+                // 1. Devolver Stock e Inventario
+                foreach (var detalle in pedido.Detalles)
+                {
+                    var producto = await _context.Productos.FindAsync(detalle.ProductoId);
+                    if (producto != null)
+                    {
+                        int stockAnterior = producto.Stock;
+                        producto.Stock += detalle.Cantidad; // Devuelve stock
+
+                        var movimiento = new InventarioMovimiento
+                        {
+                            ProductoId = producto.Id,
+                            TipoMovimiento = "Entrada",
+                            Cantidad = detalle.Cantidad,
+                            StockAnterior = stockAnterior,
+                            StockNuevo = producto.Stock,
+                            TipoReferencia = "Cancelacion",
+                            UsuarioId = userId,
+                            Fecha = DateTime.Now,
+                            Notas = $"Entrada por cancelación de pedido #{pedido.Id.ToString("D6")}",
+                            EsCorreccion = true
+                        };
+                        _context.InventarioMovimientos.Add(movimiento);
+                    }
+                }
+
+                // 2. Actualizar Pedido
+                pedido.EstadoPedido = "Cancelado";
+                pedido.Notas = string.IsNullOrEmpty(pedido.Notas) ? $"Motivo: {motivo}" : $"{pedido.Notas} | Cancelado: {motivo}";
+
+                // 3. Actualizar Venta Asociada (si existe)
+                if (pedido.Venta != null)
+                {
+                    pedido.Venta.Estado = "Cancelada";
+                    pedido.Venta.FechaCancelacion = DateTime.Now;
+                    pedido.Venta.UsuarioCancelaId = userId;
+                    pedido.Venta.MotivoCancelacion = motivo;
+                }
+
+                await _context.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                _logger?.LogInformation("[VENTAS] Pedido #{PedidoId} ({Folio}) cancelado por {UsuarioId}. Motivo: {Motivo}", pedidoId, pedido.Folio, userId, motivo);
+                return (true, "Pedido cancelado exitosamente. El stock ha sido devuelto.");
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger?.LogError(ex, "[VENTAS/ERR] Error crítico al cancelar pedido #{PedidoId}.", pedidoId);
+                return (false, $"Error interno al cancelar pedido: {ex.Message}");
             }
         }
 

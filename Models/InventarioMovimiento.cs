@@ -7,12 +7,20 @@ namespace RefWeb.Models
 {
     public class InventarioMovimiento
     {
+        public InventarioMovimiento()
+        {
+            TipoMovimiento = string.Empty;
+            TipoReferencia = string.Empty;
+            UsuarioId = string.Empty;
+            Notas = string.Empty;
+        }
+
         [Key]
         public int Id { get; set; }
 
         public int ProductoId { get; set; }
         [ForeignKey("ProductoId")]
-        public Producto Producto { get; set; }
+        public Producto? Producto { get; set; }
 
         [StringLength(20)]
         public string TipoMovimiento { get; set; } // 'Entrada', 'Salida', 'Ajuste'
@@ -32,7 +40,7 @@ namespace RefWeb.Models
 
         public string UsuarioId { get; set; } // IdentityUser que realizó el movimiento
         [ForeignKey("UsuarioId")]
-        public IdentityUser Usuario { get; set; }
+        public IdentityUser? Usuario { get; set; }
 
         public DateTime Fecha { get; set; } = DateTime.Now;
 
@@ -42,6 +50,7 @@ namespace RefWeb.Models
         public bool EsCorreccion { get; set; } = false;
         public int? MovimientoOriginalId { get; set; }
         [ForeignKey("MovimientoOriginalId")]
-        public InventarioMovimiento MovimientoOriginal { get; set; }
+        public InventarioMovimiento? MovimientoOriginal { get; set; }
     }
 }
+

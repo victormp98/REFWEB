@@ -689,23 +689,39 @@
         // Función global para imprimir el ticket
         function imprimirTicket(ventaId) {
             const contenido = document.getElementById('ticketImprimible').innerHTML;
-            const ventana = window.open('', '_blank', 'width=380,height=600');
+            const ventana = window.open('', '_blank', 'width=380,height=800');
             ventana.document.write(`
                 <!DOCTYPE html>
                 <html><head>
                     <meta charset="utf-8">
                     <title>Ticket de Venta</title>
                     <style>
-                        body { font-family: 'Courier New', monospace; font-size: 13px; margin: 0; padding: 16px; width: 320px; }
+                        body { 
+                            font-family: 'Courier New', monospace; 
+                            font-size: 14pt; 
+                            margin: 0; 
+                            padding: 0; 
+                            width: 100%; 
+                            box-sizing: border-box; 
+                        }
                         .d-flex { display: flex; }
                         .justify-content-between { justify-content: space-between; }
-                        table { width: 100%; border-collapse: collapse; }
-                        th, td { padding: 2px 0; }
-                        @@media print { @@page { margin: 0; size: 80mm auto; } }
+                        table { width: 100%; border-collapse: collapse; margin-bottom: 8px; }
+                        th, td { padding: 4px 0; }
+                        .text-center { text-align: center; }
+                        .fw-bold { font-weight: bold; }
+                        .mt-4 { margin-top: 1.5rem; }
+                        .mb-3 { margin-bottom: 1rem; }
+                        @@media print { 
+                            @@page { margin: 0; size: 80mm auto; } 
+                            body { margin: 0; padding: 2mm; }
+                        }
                     </style>
                 </head>
                 <body onload="window.print(); window.close();">
-                    ${contenido}
+                    <div style="width: 100%; max-width: 80mm; margin: 0 auto;">
+                        ${contenido}
+                    </div>
                 </body></html>`);
             ventana.document.close();
         }
